@@ -9,7 +9,7 @@
  * v0.2.0 adds a Diagnostics section for remote beta testing: sanitised device
  * dumps, per-device state capture with snapshot/diff, a raw command console, and
  * an optional generic-driver fallback for device types with no purpose-built
- * driver yet. See TESTING.md.
+ * driver yet.
  *
  * Credit: ported from the official Dreo Home Assistant integration
  * (dreo-team/hass-dreoverse, MIT) and its pydreo-cloud transport library.
@@ -47,8 +47,10 @@ import groovy.transform.Field
     // for both because Home Assistant has a device_class to say which direction
     // the thing runs; Hubitat does not, so the driver name is the only signal a
     // user gets and "Dreo Humidifier" on a dehumidifier is simply wrong. The
-    // setpoint machinery is known to transfer if anyone ever needs it: see
-    // AUDIT.md. Until then it falls through to Dreo Basic Device.
+    // The setpoint machinery does transfer if anyone ever needs it (same config
+    // block, same directive_graph), but a dehumidifier has wind_level not
+    // fog_level and filter_threshold not filter_time, and its setpoint is a
+    // ceiling rather than a floor. Falls through to Dreo Basic Device for now.
 ]
 
 // Anything not named above that still advertises fan support gets the default
@@ -119,8 +121,8 @@ def mainPage() {
 
 private diagnosticsSection() {
     section("Diagnostics", hideable: true, hidden: true) {
-        paragraph "Tools for helping test device types I don't own. Safe to ignore " +
-                  "if everything is working. See TESTING.md in the repo."
+        paragraph "Tools for capturing what your devices report, for adding support " +
+                  "for models nobody has. Safe to ignore if everything is working."
 
         input name: "allowBasic", type: "bool", submitOnChange: true,
               title: "Add non-fan device types using the basic driver",
@@ -337,8 +339,12 @@ def syncChildren() {
         def child = getChildDevice(dni)
         if (!child) {
             try {
+                // Hubitat convention: the device's own name goes in Name, and Label
+                // is left empty for the user. displayName falls back to Name, so the
+                // device reads sensibly out of the box while staying renameable in
+                // Hubitat without touching the Dreo app.
                 child = addChildDevice(CHILD_NAMESPACE, m.driver, dni,
-                                       [name: m.driver, label: m.name, isComponent: false])
+                                       [name: m.name, isComponent: false])
                 child.updateDataValue("deviceSn", sn)
                 child.updateDataValue("deviceType", (m.deviceType ?: "").toString())
                 child.updateDataValue("model", (m.model ?: "").toString())
@@ -348,6 +354,7 @@ def syncChildren() {
                 return
             }
         }
+        syncNaming(child, m.name)
         child.configureMeta([name: m.name, model: m.model, deviceType: m.deviceType,
                              speedMin: m.speedMin, speedMax: m.speedMax, oscKey: m.oscKey,
                              presetModes: m.presetModes, toggles: m.toggles,
@@ -367,6 +374,27 @@ def syncChildren() {
 }
 
 private String childDni(String sn) { "dreo-${sn}" }
+
+// Keep Name tracking the Dreo app, and leave Label alone so a name set in
+// Hubitat is never overwritten.
+private void syncNaming(child, String dreoName) {
+    if (!child || !dreoName) return
+    try {
+        if (child.getName() != dreoName) child.setName(dreoName)
+
+        // One-time migration. Up to 0.2.0 the Dreo name was written to Label,
+        // which left Name showing the driver name and made clearing the label
+        // useless. Only clear it when it still matches what we wrote, so a label
+        // the user chose themselves is never touched.
+        if (child.getLabel() == dreoName) {
+            child.setLabel(null)
+            log.info "Dreo: moved '${dreoName}' from Label to Name. You can now set your own " +
+                     "label in Hubitat without renaming the device in the Dreo app."
+        }
+    } catch (e) {
+        log.warn "Dreo: could not update naming for '${dreoName}': ${e}"
+    }
+}
 
 // True when a device presents itself as a fan, whether or not its deviceType is
 // one we know. Humidifiers advertise [humidifier, select, switch, number, sensor]

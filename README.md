@@ -4,18 +4,14 @@ Control your Dreo fans, purifiers and humidifiers from Hubitat. One app signs
 into your Dreo account and finds your devices; each device then appears in
 Hubitat like any other, ready for dashboards, rules and voice assistants.
 
-> [!WARNING]
-> **This is the `more-devices` branch, and most of it has never run on real
-> hardware.**
-> Tower fans are the only part that has been tested. Everything else was written
-> by studying Dreo's official Home Assistant integration, so it should work, but
-> it might not.
+> [!NOTE]
+> **Not everything here has run on real hardware.** Support for anything other
+> than tower fans was written by studying Dreo's official Home Assistant
+> integration together with real device data from Hubitat logs, then confirmed
+> by testers where possible. The status column below says which is which.
 >
-> For the stable version use [`main`](../../tree/main) or the
-> [`0.1.0`](../../releases/tag/0.1.0) release.
->
-> Testing is very welcome, especially on anything above marked untested. Open an
-> issue or reply in the Hubitat community thread with what you find.
+> Reports are very welcome, especially on the untested types. Open an issue or
+> reply in the Hubitat community thread.
 
 > Unofficial and community-maintained. Not affiliated with or endorsed by Dreo.
 > Ported from the official Dreo Home Assistant integration
@@ -30,13 +26,13 @@ likely work even if it is newer than anything listed.
 
 | Driver | Device type | Status |
 | --- | --- | --- |
-| Dreo Basic Device | Air conditioners (`DR-HAC`), heaters | On/off and mode only |
-| Dreo Fan | Air circulators (`DR-HAF`, `DR-HPF`) | Written, untested |
-| Dreo Fan | Air purifiers (`DR-HAP`) | Written, untested |
-| Dreo Fan + Dreo Fan Light | Ceiling fans (`DR-HCF`) | Written, no tester |
-| Dreo Fan | Evaporative coolers (`DR-HEC`) | Fan only, no humidity control |
-| Dreo Fan | Tower fans (`DR-HTF`) | Worked in 0.1, on a new driver here |
-| Dreo Humidifier | Humidifiers (`DR-HHM`) | Written, untested |
+| Dreo Basic Device | Air conditioners (`DR-HAC`), heaters | On/off and mode only, untested |
+| Dreo Fan | Air circulators (`DR-HAF`, `DR-HPF`) | Working, confirmed by a tester |
+| Dreo Fan | Air purifiers (`DR-HAP`) | Working, confirmed by a tester |
+| Dreo Fan + Dreo Fan Light | Ceiling fans (`DR-HCF`) | Written, nobody has tested it |
+| Dreo Fan | Evaporative coolers (`DR-HEC`) | Fan side only, untested |
+| Dreo Fan | Tower fans (`DR-HTF`) | Working |
+| Dreo Humidifier | Humidifiers (`DR-HHM`) | Working, confirmed by a tester |
 
 Air purifiers use the fan driver because Dreo's own system treats a purifier as
 a fan with a filter attached. Same for evaporative coolers, which are fans with
@@ -64,9 +60,17 @@ matters because these devices remember a separate target for Auto and for Sleep.
 
 ## Install
 
+### With Hubitat Package Manager
+
+Search for **Dreo Integration** and install it. HPM will ask which optional
+drivers you want; pick the ones matching the devices you own. Updates then come
+through HPM like anything else.
+
+### By hand
+
 You only need the drivers for the devices you actually own.
 
-| If you have | Install |
+| If you have | Install from `drivers/` |
 | --- | --- |
 | Any fan, circulator or purifier | `dreo_fan.groovy` |
 | A ceiling fan | `dreo_fan.groovy` **and** `dreo_fan_light.groovy` |
@@ -77,7 +81,7 @@ You only need the drivers for the devices you actually own.
 devices fails with a "driver not found" error.
 
 1. **Drivers Code** > New Driver > paste each driver you need > Save.
-2. **Apps Code** > New App > paste `dreo_integration.groovy` > Save.
+2. **Apps Code** > New App > paste `apps/dreo_integration.groovy` > Save.
 3. **Apps** > Add User App > **Dreo Integration**.
 
 ## Setup
@@ -106,9 +110,7 @@ driver until you move them across:
 2. Go back into the Dreo app and tap **Done**, so the new driver picks up your
    device's details.
 
-Nothing gets deleted, and switching **Type** back undoes it if something goes
-wrong. `dreo_tower_fan.groovy` is kept here for exactly that reason, but is
-otherwise retired.
+Nothing gets deleted. `Dreo Tower Fan` is no longer shipped.
 
 ## Things to know
 

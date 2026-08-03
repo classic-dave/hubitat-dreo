@@ -1,0 +1,60 @@
+{
+  "packageName": "Dreo Integration",
+  "author": "classic-dave",
+  "version": "0.2.0",
+  "minimumHEVersion": "2.3.4",
+  "dateReleased": "2026-08-02",
+  "documentationLink": "https://github.com/classic-dave/hubitat-dreo/blob/main/README.md",
+  "communityLink": "https://community.hubitat.com/t/beta-dreo-fan-integration-cloud/165215",
+  "licenseFile": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/LICENSE",
+  "releaseNotes": "0.2.0 adds air circulators, air purifiers, ceiling fans (including the light as a separate device) and humidifiers. Dreo Fan replaces Dreo Tower Fan and is a superset of it, so existing rules keep working; change each fan's Type to Dreo Fan and re-save the app to migrate. Device names now populate Hubitat's Name field rather than Label, so devices can be renamed in Hubitat.",
+  "apps": [
+    {
+      "id": "9cd9e08a-006e-4743-acd3-c544efd273a6",
+      "name": "Dreo Integration",
+      "namespace": "community",
+      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/apps/dreo_integration.groovy",
+      "required": true,
+      "oauth": false,
+      "primary": true,
+      "version": "0.2.0"
+    }
+  ],
+  "drivers": [
+    {
+      "id": "47688895-81e7-47cc-a502-4883d1d03e42",
+      "name": "Dreo Fan",
+      "namespace": "community",
+      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_fan.groovy",
+      "required": true,
+      "version": "0.2.0"
+    },
+    {
+      "id": "ab915ae4-a09d-42d4-86ab-455d64ae43f5",
+      "name": "Dreo Fan Light",
+      "namespace": "community",
+      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_fan_light.groovy",
+      "required": false,
+      "version": "0.2.0",
+      "description": "Only needed for ceiling fans. Creates the light as its own device."
+    },
+    {
+      "id": "5beaa2ab-f93a-49e7-a23b-dea72e8224ec",
+      "name": "Dreo Humidifier",
+      "namespace": "community",
+      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_humidifier.groovy",
+      "required": false,
+      "version": "0.2.0",
+      "description": "Only needed for humidifiers."
+    },
+    {
+      "id": "4a010d88-5537-4de6-ac58-f5dd42abe8f8",
+      "name": "Dreo Basic Device",
+      "namespace": "community",
+      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_basic_device.groovy",
+      "required": false,
+      "version": "0.2.0",
+      "description": "Only needed for air conditioners and heaters. On/off and mode only."
+    }
+  ]
+}

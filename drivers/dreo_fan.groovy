@@ -220,7 +220,7 @@ private void manageLightChild(Map m) {
     if (hasLight && !child) {
         try {
             addChildDevice("community", "Dreo Fan Light", lightDni(),
-                           [name: "Dreo Fan Light", label: "${device.displayName} Light", isComponent: true])
+                           [name: "${device.displayName} Light", isComponent: true])
             log.info "Created light child for ${device.displayName}"
         } catch (e) {
             log.error "Could not create the light child for ${device.displayName}: " +
