@@ -4,6 +4,11 @@
   "version": "0.2.0",
   "minimumHEVersion": "2.3.4",
   "dateReleased": "2026-08-02",
+  "tags": [
+    "Climate Control",
+    "Appliances",
+    "Cloud"
+  ],
   "documentationLink": "https://github.com/classic-dave/hubitat-dreo/blob/main/README.md",
   "communityLink": "https://community.hubitat.com/t/beta-dreo-fan-integration-cloud/165215",
   "licenseFile": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/LICENSE",
