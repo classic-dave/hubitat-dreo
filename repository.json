@@ -1,0 +1,18 @@
+{
+  "author": "classic-dave",
+  "gitHubUrl": "https://github.com/classic-dave",
+  "payPalUrl": "",
+  "packages": [
+    {
+      "name": "Dreo Integration",
+      "category": "Integrations",
+      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/packageManifest.json",
+      "description": "Cloud control of Dreo fans, air circulators, air purifiers, ceiling fans and humidifiers. A parent app handles the account, discovery and polling; child drivers expose each device.",
+      "tags": [
+        "Climate Control",
+        "Appliances",
+        "Cloud"
+      ]
+    }
+  ]
+}
