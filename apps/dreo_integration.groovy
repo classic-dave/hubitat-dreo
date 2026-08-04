@@ -1,12 +1,12 @@
 /**
- * Dreo Integration - Hubitat parent app  (v0.2.0)
+ * Dreo Integration - Hubitat parent app  (0.2.0)
  *
  * Shared account/auth/token lifecycle, device discovery, child creation, and the
  * single poll loop for all Dreo devices. Child drivers hold per-device semantics
  * and delegate HTTP back here (deviceControl / deviceRefresh). Transport matches
  * pydreo-cloud 1.0.0. See README for install steps and adding new device types.
  *
- * v0.2.0 adds a Diagnostics section for remote beta testing: sanitised device
+ * 0.2.0 adds a Diagnostics section for remote beta testing: sanitised device
  * dumps, per-device state capture with snapshot/diff, a raw command console, and
  * an optional generic-driver fallback for device types with no purpose-built
  * driver yet.
@@ -53,12 +53,16 @@ import groovy.transform.Field
     // ceiling rather than a floor. Falls through to Dreo Basic Device for now.
 ]
 
-// Anything not named above that still advertises fan support gets the default
-// driver, which is entirely config-driven and so should cope with an unseen type.
-@Field static final String DEFAULT_DRIVER = "Dreo Fan"
+// A device type not named above that still declares fan support prefers the fan
+// driver, which is entirely config-driven and so should cope with an unseen
+// type. Only ever fires for a brand new deviceType string; new models within a
+// known type match the map above.
+@Field static final String PREFERRED_FAN_DRIVER = "Dreo Fan"
 
-// Opt-in, for types the default driver can't model (humidifiers, air
-// conditioners). Declares no FanControl, so it doesn't misrepresent them.
+// Always installed and always available. Declares only Switch, Actuator and
+// Refresh, all true of every Dreo device, so it can never misrepresent one.
+// Used for types nothing else models, and as the safety net when the driver a
+// device would prefer is not installed.
 @Field static final String BASIC_DRIVER = "Dreo Basic Device"
 
 // Dumps go to File Manager in full; only a preview is held in state, which has
@@ -124,10 +128,6 @@ private diagnosticsSection() {
         paragraph "Tools for capturing what your devices report, for adding support " +
                   "for models nobody has. Safe to ignore if everything is working."
 
-        input name: "allowBasic", type: "bool", submitOnChange: true,
-              title: "Add non-fan device types using the basic driver",
-              description: "Humidifiers and air conditioners get on/off, mode and probing. Fans, circulators and purifiers are handled by the default driver already.",
-              defaultValue: false
         input name: "redactNames", type: "bool",
               title: "Redact device names in dumps",
               description: "Names like \"Master Bedroom\" describe your home. Serial numbers are always redacted.",
@@ -265,26 +265,20 @@ def discoverList() {
         def mdl  = dev.model
         def type = (dev.deviceType ?: "fan").toString()
 
+        // Pick the driver this device would prefer. Nothing is skipped any more:
+        // Dreo Basic Device is always installed, so every device can at least be
+        // added with power, mode and probing.
         def driverName = DRIVER_FOR_TYPE[type]
         def note = null
         if (!driverName && advertisesFan(dev)) {
-            driverName = DEFAULT_DRIVER
-            note = "default"
-        }
-        if (!driverName && settings.allowBasic) {
-            driverName = BASIC_DRIVER
-            note = "basic"
+            driverName = PREFERRED_FAN_DRIVER
+            note = "declares fan support"
         }
         if (!driverName) {
-            skipped << "${nm} (${type})".toString()
-            log.info "Dreo: skipping ${nm} (${sn}): deviceType '${type}' has no driver yet"
-            return
+            driverName = BASIC_DRIVER
+            note = "no driver models this type yet"
         }
-        if (note == "default") {
-            log.info "Dreo: ${nm} (${sn}) deviceType '${type}' is unknown but advertises fan support; using ${DEFAULT_DRIVER}"
-        } else if (note == "basic") {
-            log.info "Dreo: ${nm} (${sn}) deviceType '${type}' has no driver; using ${BASIC_DRIVER}"
-        }
+        if (note) log.info "Dreo: ${nm} (${sn}) deviceType '${type}' has no explicit mapping (${note}); using ${driverName}"
 
         def fanCfg  = dev.config?.fan_entity_config ?: [:]
         def range   = (fanCfg.speed_range instanceof List) ? fanCfg.speed_range : null
@@ -304,7 +298,7 @@ def discoverList() {
         }
 
         def label = mdl ? "${nm} (${mdl})".toString() : nm.toString()
-        available[sn] = note ? "${label} [${note}]".toString() : label
+        available[sn] = (driverName == BASIC_DRIVER) ? "${label} [basic support]".toString() : label
         meta[sn] = [name: nm, model: mdl, driver: driverName, deviceType: type, note: note,
                     speedMin: range ? (range.min() as Integer) : 1,
                     speedMax: range ? (range.max() as Integer) : null,
@@ -338,21 +332,36 @@ def syncChildren() {
         def dni = childDni(sn)
         def child = getChildDevice(dni)
         if (!child) {
+            // Hubitat convention: the device's own name goes in Name, and Label
+            // is left empty for the user. displayName falls back to Name, so the
+            // device reads sensibly out of the box while staying renameable in
+            // Hubitat without touching the Dreo app.
+            def props = [name: m.name, isComponent: false]
             try {
-                // Hubitat convention: the device's own name goes in Name, and Label
-                // is left empty for the user. displayName falls back to Name, so the
-                // device reads sensibly out of the box while staying renameable in
-                // Hubitat without touching the Dreo app.
-                child = addChildDevice(CHILD_NAMESPACE, m.driver, dni,
-                                       [name: m.name, isComponent: false])
-                child.updateDataValue("deviceSn", sn)
-                child.updateDataValue("deviceType", (m.deviceType ?: "").toString())
-                child.updateDataValue("model", (m.model ?: "").toString())
+                child = addChildDevice(CHILD_NAMESPACE, m.driver, dni, props)
                 log.info "Dreo: added ${m.driver} '${m.name}' (${sn})"
             } catch (e) {
-                log.error "Dreo: failed to create child for ${m.name} (${sn}): ${e}. Is the '${m.driver}' driver installed?"
-                return
+                // The preferred driver is optional in the package and may simply
+                // not be installed. Basic Device always is, so fall back to it
+                // rather than leaving the device out entirely.
+                if (m.driver != BASIC_DRIVER) {
+                    log.warn "Dreo: the '${m.driver}' driver is not installed, so '${m.name}' was " +
+                             "added with ${BASIC_DRIVER} instead, which gives power and mode only. " +
+                             "Install '${m.driver}' via HPM or by hand, then tap Done here again for full support."
+                    try {
+                        child = addChildDevice(CHILD_NAMESPACE, BASIC_DRIVER, dni, props)
+                    } catch (e2) {
+                        log.error "Dreo: could not create '${m.name}' (${sn}) with ${BASIC_DRIVER} either: ${e2}"
+                        return
+                    }
+                } else {
+                    log.error "Dreo: failed to create '${m.name}' (${sn}): ${e}. Is the '${BASIC_DRIVER}' driver installed?"
+                    return
+                }
             }
+            child.updateDataValue("deviceSn", sn)
+            child.updateDataValue("deviceType", (m.deviceType ?: "").toString())
+            child.updateDataValue("model", (m.model ?: "").toString())
         }
         syncNaming(child, m.name)
         child.configureMeta([name: m.name, model: m.model, deviceType: m.deviceType,

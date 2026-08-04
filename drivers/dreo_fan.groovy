@@ -1,5 +1,5 @@
 /**
- * Dreo Fan - Hubitat driver, child of the Dreo Integration app  (v0.2.0)
+ * Dreo Fan - Hubitat driver, child of the Dreo Integration app  (0.2.0)
  *
  * The default Dreo driver. Serves any device whose behaviour is fully described
  * by its own config payload rather than by hardcoded model knowledge:
@@ -486,7 +486,7 @@ def setAdaptiveDisplay(value) {
     setToggleField("adaptiveDisplay", value)
 }
 
-// ---------- Diagnostics (available on every device, not just unsupported ones) ----------
+// ---------- Diagnostics (available on every device) ----------
 
 // Probe any field without shipping a new driver. Dreo's cloud validates
 // server-side and rejects payloads it doesn't accept.

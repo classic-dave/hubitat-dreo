@@ -26,7 +26,7 @@ likely work even if it is newer than anything listed.
 
 | Driver | Device type | Status |
 | --- | --- | --- |
-| Dreo Basic Device | Air conditioners (`DR-HAC`), heaters | On/off and mode only, untested |
+| Dreo Basic Device | Air conditioners (`DR-HAC`), heaters, anything unrecognised | Power and mode only, untested |
 | Dreo Fan | Air circulators (`DR-HAF`, `DR-HPF`) | Working, confirmed by a tester |
 | Dreo Fan | Air purifiers (`DR-HAP`) | Working, confirmed by a tester |
 | Dreo Fan + Dreo Fan Light | Ceiling fans (`DR-HCF`) | Written, nobody has tested it |
@@ -62,20 +62,30 @@ matters because these devices remember a separate target for Auto and for Sleep.
 
 ### With Hubitat Package Manager
 
-Search for **Dreo Integration** and install it. HPM will ask which optional
-drivers you want; pick the ones matching the devices you own. Updates then come
-through HPM like anything else.
+Search for **Dreo Integration** and install it. You get the app plus **Dreo
+Basic Device**, a minimal driver that gives power, mode and diagnostics for any
+Dreo device whatsoever. HPM then asks which optional drivers you want:
+
+| Tick | If you have |
+| --- | --- |
+| Dreo Fan | Any fan, air circulator, air purifier, ceiling fan or evaporative cooler |
+| Dreo Fan Light | A ceiling fan, alongside Dreo Fan. Adds the light as its own device |
+| Dreo Humidifier | A humidifier |
+
+Tick nothing and every device still gets added, just with power and mode only.
+You can add a driver later and tap **Done** in the app to upgrade the devices
+that wanted it. Updates come through HPM like anything else.
 
 ### By hand
 
-You only need the drivers for the devices you actually own.
+Install `dreo_basic_device.groovy` plus the drivers for what you own.
 
 | If you have | Install from `drivers/` |
 | --- | --- |
+| Everyone | `dreo_basic_device.groovy` |
 | Any fan, circulator or purifier | `dreo_fan.groovy` |
 | A ceiling fan | `dreo_fan.groovy` **and** `dreo_fan_light.groovy` |
 | A humidifier | `dreo_humidifier.groovy` |
-| An air conditioner or heater | `dreo_basic_device.groovy` |
 
 **Add the drivers before the app.** If you do it the other way round, adding
 devices fails with a "driver not found" error.
@@ -93,8 +103,9 @@ devices fails with a "driver not found" error.
    They are added when you save.
 4. Choose how often Hubitat should check on them. Five minutes is the default.
 
-Air conditioners and heaters are skipped unless you turn on **Add non-fan device
-types using the basic driver** under Diagnostics.
+Nothing is skipped. Anything no driver models properly, such as an air
+conditioner or heater, is added with Dreo Basic Device and shows as
+`[basic support]` in the list.
 
 ## Upgrading from 0.1
 
@@ -120,7 +131,7 @@ Nothing gets deleted. `Dreo Tower Fan` is no longer shipped.
   your internet is down, nothing works. That is a limitation of the devices, not
   of this integration.
 - **Hubitat's Settings > Swap Device does not work on devices created by an
-  app.** That applies to every app-based integration, not just this one. To
+  app.** That applies to every app-based integration. To
   repoint rules at a re-created device, use the device's "In Use By" list, or
   copy the rule and substitute the device. This is a different thing from
   changing a device's **Type**, which does work and is how you move between

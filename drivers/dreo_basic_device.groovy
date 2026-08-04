@@ -1,5 +1,5 @@
 /**
- * Dreo Basic Device - Hubitat driver, child of the Dreo Integration app  (v0.2.0)
+ * Dreo Basic Device - Hubitat driver, child of the Dreo Integration app  (0.2.0)
  *
  * The minimal driver for Dreo devices that are NOT fans: humidifiers, air
  * conditioners, and any future type the default Dreo Fan driver can't model.
