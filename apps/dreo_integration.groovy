@@ -332,11 +332,9 @@ def syncChildren() {
         def dni = childDni(sn)
         def child = getChildDevice(dni)
         if (!child) {
-            // Hubitat convention: the device's own name goes in Name, and Label
-            // is left empty for the user. displayName falls back to Name, so the
-            // device reads sensibly out of the box while staying renameable in
-            // Hubitat without touching the Dreo app.
-            def props = [name: m.name, isComponent: false]
+            // Hubitat convention, matching a natively paired device: Name
+            // identifies the hardware and Label is the user's. See syncNaming.
+            def props = [name: factoryName(m), label: m.name, isComponent: false]
             try {
                 child = addChildDevice(CHILD_NAMESPACE, m.driver, dni, props)
                 log.info "Dreo: added ${m.driver} '${m.name}' (${sn})"
@@ -363,7 +361,7 @@ def syncChildren() {
             child.updateDataValue("deviceType", (m.deviceType ?: "").toString())
             child.updateDataValue("model", (m.model ?: "").toString())
         }
-        syncNaming(child, m.name)
+        syncNaming(child, m)
         child.configureMeta([name: m.name, model: m.model, deviceType: m.deviceType,
                              speedMin: m.speedMin, speedMax: m.speedMax, oscKey: m.oscKey,
                              presetModes: m.presetModes, toggles: m.toggles,
@@ -384,24 +382,34 @@ def syncChildren() {
 
 private String childDni(String sn) { "dreo-${sn}" }
 
-// Keep Name tracking the Dreo app, and leave Label alone so a name set in
-// Hubitat is never overwritten.
-private void syncNaming(child, String dreoName) {
-    if (!child || !dreoName) return
-    try {
-        if (child.getName() != dreoName) child.setName(dreoName)
+// What the hardware is, for the Name field. Mirrors how Hubitat names a
+// natively paired device, where Name is the make and model and Label is the
+// user's own. Falls back to the driver name for a model the API did not report.
+private String factoryName(Map m) {
+    return m.model ? "Dreo ${m.model}".toString() : (m.driver ?: "Dreo Device").toString()
+}
 
-        // One-time migration. Up to 0.2.0 the Dreo name was written to Label,
-        // which left Name showing the driver name and made clearing the label
-        // useless. Only clear it when it still matches what we wrote, so a label
-        // the user chose themselves is never touched.
-        if (child.getLabel() == dreoName) {
-            child.setLabel(null)
-            log.info "Dreo: moved '${dreoName}' from Label to Name. You can now set your own " +
-                     "label in Hubitat without renaming the device in the Dreo app."
+private void syncNaming(child, Map m) {
+    if (!child || !m) return
+    try {
+        // Name tracks the hardware and is safe to keep in sync; it never holds
+        // anything the user chose.
+        def factory = factoryName(m)
+        if (child.getName() != factory) child.setName(factory)
+
+        // Label belongs to the user, so it is only ever written when empty.
+        // Renaming a device in Hubitat sticks, and renaming it in the Dreo app
+        // will not overwrite it. Empty labels are filled because a blank label
+        // makes Hubitat fall back to showing the model, which nobody wants on a
+        // dashboard. This also repairs devices created by an earlier build that
+        // put the Dreo name in Name and left Label blank.
+        if (!child.getLabel() && m.name) {
+            child.setLabel(m.name.toString())
+            log.info "Dreo: set label '${m.name}' on ${factory}. Rename it in Hubitat whenever " +
+                     "you like; it will not be overwritten."
         }
     } catch (e) {
-        log.warn "Dreo: could not update naming for '${dreoName}': ${e}"
+        log.warn "Dreo: could not update naming for '${m.name}': ${e}"
     }
 }
 
