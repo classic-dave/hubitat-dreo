@@ -125,6 +125,11 @@ Nothing gets deleted. `Dreo Tower Fan` is no longer shipped.
 
 ## Things to know
 
+- **Naming** follows the same convention as a natively paired device.
+  **Device Name** holds the hardware, such as `Dreo DR-HTF004S`, and **Device
+  Label** holds the name from your Dreo app, such as `Living Room Fan`. Rename
+  the label in Hubitat whenever you like. It is only ever written when blank, so
+  a rename in Hubitat sticks and a rename in the Dreo app will not overwrite it.
 - **Removing a device's tick mark deletes it**, along with any dashboard tiles
   or rules pointing at it. Only untick something you actually want gone.
 - **Everything goes through Dreo's servers.** There is no local control, so if
