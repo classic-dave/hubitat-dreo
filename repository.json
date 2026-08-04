@@ -7,7 +7,7 @@
       "name": "Dreo Integration",
       "category": "Integrations",
       "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/packageManifest.json",
-      "description": "Cloud control of Dreo fans, air circulators, air purifiers, ceiling fans and humidifiers. A parent app handles the account, discovery and polling; child drivers expose each device.",
+      "description": "Cloud control of Dreo fans, air circulators, air purifiers, ceiling fans and humidifiers. Installs the Dreo Integration app plus a minimal driver that works with any Dreo device; tick the optional drivers for the devices you actually own.",
       "tags": [
         "Climate Control",
         "Appliances",

@@ -1,5 +1,5 @@
 /**
- * Dreo Fan Light - Hubitat component driver, child of Dreo Fan  (v0.2.0)
+ * Dreo Fan Light - Hubitat component driver, child of Dreo Fan  (0.2.0)
  *
  * The light on a Dreo ceiling fan. Created automatically by Dreo Fan when the
  * device's config advertises a light_entity_config, so it is never installed by

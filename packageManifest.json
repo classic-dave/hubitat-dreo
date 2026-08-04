@@ -3,7 +3,7 @@
   "author": "classic-dave",
   "version": "0.2.0",
   "minimumHEVersion": "2.3.4",
-  "dateReleased": "2026-08-02",
+  "dateReleased": "2026-08-03",
   "tags": [
     "Climate Control",
     "Appliances",
@@ -12,7 +12,7 @@
   "documentationLink": "https://github.com/classic-dave/hubitat-dreo/blob/main/README.md",
   "communityLink": "https://community.hubitat.com/t/beta-dreo-fan-integration-cloud/165215",
   "licenseFile": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/LICENSE",
-  "releaseNotes": "0.2.0 adds air circulators, air purifiers, ceiling fans (including the light as a separate device) and humidifiers. Dreo Fan replaces Dreo Tower Fan and is a superset of it, so existing rules keep working; change each fan's Type to Dreo Fan and re-save the app to migrate. Device names now populate Hubitat's Name field rather than Label, so devices can be renamed in Hubitat.",
+  "releaseNotes": "0.2.0 adds air circulators, air purifiers, ceiling fans (with the light as a separate device) and humidifiers. The app and Dreo Basic Device are always installed; tick the optional drivers matching the devices you own. Nothing is skipped during discovery: a device whose preferred driver is not installed is added with Dreo Basic Device, giving power and mode, and upgrades itself once you install that driver and tap Done. Dreo Fan replaces Dreo Tower Fan and covers everything it did, so existing rules keep working; change each fan's Type to Dreo Fan and re-save the app to migrate. Device names now populate Hubitat's Name field rather than Label.",
   "apps": [
     {
       "id": "9cd9e08a-006e-4743-acd3-c544efd273a6",
@@ -22,17 +22,28 @@
       "required": true,
       "oauth": false,
       "primary": true,
-      "version": "0.2.0"
+      "version": "0.2.0",
+      "description": "Required. Handles the Dreo account, device discovery and polling."
     }
   ],
   "drivers": [
+    {
+      "id": "4a010d88-5537-4de6-ac58-f5dd42abe8f8",
+      "name": "Dreo Basic Device",
+      "namespace": "community",
+      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_basic_device.groovy",
+      "required": true,
+      "version": "0.2.0",
+      "description": "Required. Power, mode and diagnostics for every Dreo device, and the fallback for anything the other drivers do not model."
+    },
     {
       "id": "47688895-81e7-47cc-a502-4883d1d03e42",
       "name": "Dreo Fan",
       "namespace": "community",
       "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_fan.groovy",
-      "required": true,
-      "version": "0.2.0"
+      "required": false,
+      "version": "0.2.0",
+      "description": "Tower fans, air circulators, air purifiers and evaporative coolers. Also used by ceiling fans. Tick this if you own any Dreo fan."
     },
     {
       "id": "ab915ae4-a09d-42d4-86ab-455d64ae43f5",
@@ -51,15 +62,6 @@
       "required": false,
       "version": "0.2.0",
       "description": "Only needed for humidifiers."
-    },
-    {
-      "id": "4a010d88-5537-4de6-ac58-f5dd42abe8f8",
-      "name": "Dreo Basic Device",
-      "namespace": "community",
-      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_basic_device.groovy",
-      "required": false,
-      "version": "0.2.0",
-      "description": "Only needed for air conditioners and heaters. On/off and mode only."
     }
   ]
 }

@@ -1,5 +1,5 @@
 /**
- * Dreo Humidifier - Hubitat driver, child of the Dreo Integration app  (v0.2.0)
+ * Dreo Humidifier - Hubitat driver, child of the Dreo Integration app  (0.2.0)
  *
  * For Dreo humidifiers (deviceType "humidifier", DR-HHM*). Like the Dreo Fan
  * driver, everything model-specific is read from the device's own config: mode
@@ -15,11 +15,11 @@
  *   Manual -> writes fog_level, rh_auto and rh_sleep out of service
  *
  * Every state payload contains rh_auto AND rh_sleep at once, so reading the
- * setpoint requires consulting the graph too; you cannot just take whichever
- * you find. The official Home Assistant integration applies the graph when
- * writing but not when reading (coordinator.process_humidifier_data assigns
- * rh_auto then unconditionally overwrites it with rh_sleep), so in Auto mode it
- * reports the Sleep setpoint. This driver applies the graph in both directions.
+ * setpoint requires consulting the graph too. Taking whichever field you find
+ * first gives the wrong answer. The official Home Assistant integration applies
+ * the graph when writing but not when reading (coordinator.process_humidifier_data
+ * assigns rh_auto then unconditionally overwrites it with rh_sleep), so in Auto
+ * mode it reports the Sleep setpoint. This driver applies the graph both ways.
  *
  * Ported from dreo-team/hass-dreoverse (MIT).
  * Independent Hubitat port; not affiliated with or endorsed by Dreo.
