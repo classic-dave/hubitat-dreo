@@ -1,5 +1,5 @@
 /**
- * Dreo Basic Device - Hubitat driver, child of the Dreo Integration app  (0.2.0)
+ * Dreo Basic Device - Hubitat driver, child of the Dreo Integration app  (0.3.0)
  *
  * The minimal driver for Dreo devices that are NOT fans: humidifiers, air
  * conditioners, and any future type the default Dreo Fan driver can't model.
@@ -29,7 +29,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String DRIVER_VERSION = "0.2.0"
+@Field static final String DRIVER_VERSION = "0.3.0"
 
 // Fields that mean the same thing on every Dreo device type seen so far.
 @Field static final String F_POWER     = "power_switch"

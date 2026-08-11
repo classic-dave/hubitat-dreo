@@ -1,12 +1,12 @@
 /**
- * Dreo Integration - Hubitat parent app  (0.2.0)
+ * Dreo Integration - Hubitat parent app  (0.3.0)
  *
  * Shared account/auth/token lifecycle, device discovery, child creation, and the
  * single poll loop for all Dreo devices. Child drivers hold per-device semantics
  * and delegate HTTP back here (deviceControl / deviceRefresh). Transport matches
  * pydreo-cloud 1.0.0. See README for install steps and adding new device types.
  *
- * 0.2.0 adds a Diagnostics section for remote beta testing: sanitised device
+ * 0.3.0 note: the Diagnostics section provides for remote beta testing: sanitised device
  * dumps, per-device state capture with snapshot/diff, a raw command console, and
  * an optional generic-driver fallback for device types with no purpose-built
  * driver yet.
@@ -21,7 +21,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String APP_VERSION            = "0.2.0"
+@Field static final String APP_VERSION            = "0.3.0"
 @Field static final String DEFAULT_CLIENT_ID      = "89ef537b2202481aaaf9077068bcb0c9"
 @Field static final String DEFAULT_CLIENT_SECRET  = "41b20a1f60e9499e89c8646c31f93ea1"
 @Field static final String NA_BASE_URL            = "https://open-api-us.dreo-tech.com"

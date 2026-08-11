@@ -1,5 +1,5 @@
 /**
- * Dreo Fan - Hubitat driver, child of the Dreo Integration app  (0.2.0)
+ * Dreo Fan - Hubitat driver, child of the Dreo Integration app  (0.3.0)
  *
  * The default Dreo driver. Serves any device whose behaviour is fully described
  * by its own config payload rather than by hardcoded model knowledge:
@@ -40,7 +40,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String DRIVER_VERSION = "0.2.0"
+@Field static final String DRIVER_VERSION = "0.3.0"
 
 // Config key in toggle_entity_config -> semantic attribute here.
 // LEGACY: Dreo Tower Fan exposed the led_switch display toggle as "adaptiveDisplay".
