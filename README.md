@@ -107,22 +107,6 @@ Nothing is skipped. Anything no driver models properly, such as an air
 conditioner or heater, is added with Dreo Basic Device and shows as
 `[basic support]` in the list.
 
-## Upgrading from 0.1
-
-Paste the new code over your existing entries in **Apps Code** and **Drivers
-Code** rather than creating new ones. The names have not changed, and ending up
-with two of each is confusing.
-
-`Dreo Fan` replaces `Dreo Tower Fan` and can do everything the old driver could,
-so your existing rules and dashboards keep working. Your fans stay on the old
-driver until you move them across:
-
-1. On the device page, change **Type** to `Dreo Fan`, then **Save Device**.
-2. Go back into the Dreo app and tap **Done**, so the new driver picks up your
-   device's details.
-
-Nothing gets deleted. `Dreo Tower Fan` is no longer shipped.
-
 ## Things to know
 
 - **Naming** follows the same convention as a natively paired device.
