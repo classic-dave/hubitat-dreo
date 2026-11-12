@@ -54,7 +54,7 @@ metadata {
 
         command "sendDesired", [[name: "json*", type: "STRING",
                                  description: "Raw desired payload, e.g. {\"oscmode\":\"Horizontal\"}"]]
-        command "logRawState"
+        command "logCapabilities"
     }
     preferences {
         input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true
@@ -177,9 +177,11 @@ def sendDesired(String json) {
     }
 }
 
-// Log the last known property map on one line, for copying into a report.
-def logRawState() {
-    if (!state.raw) { log.info "No state captured yet. Tap Refresh first."; return }
-    log.info "Dreo basic raw state for ${device.displayName}: " +
-             JsonOutput.toJson((state.raw))
+// What this device is and what it's reporting now, on one line for pasting
+// into a bug report. Named to match the other Dreo drivers.
+def logCapabilities() {
+    log.info "Dreo ${device.displayName} capabilities: " + JsonOutput.toJson([
+        deviceType: getDataValue("deviceType"), model: getDataValue("model"),
+        rawState: state.raw
+    ])
 }

@@ -102,7 +102,6 @@ metadata {
         command "setSelectOption", [[name: "select*", type: "STRING", description: "State field name, e.g. vfixed_angle_range"],
                                     [name: "option*", type: "STRING", description: "One of the options listed in selectStates"]]
         command "logCapabilities"
-        command "logRawState"
         command "sendDesired", [[name: "json*", type: "STRING",
                                  description: "Raw payload for probing, e.g. {\"oscmode\":\"Horizontal\"}"]]
     }
@@ -571,13 +570,8 @@ def sendDesired(String json) {
     else       log.warn "sendDesired ${JsonOutput.toJson(desired)} rejected: status=${r?.status} data=${r?.data}"
 }
 
-// Last known property map on one line, for pasting into a bug report.
-def logRawState() {
-    if (!state.raw) { log.info "No state captured yet. Tap Refresh first."; return }
-    log.info "Dreo ${device.displayName} raw state: " + JsonOutput.toJson((state.raw))
-}
-
-// Print everything this device told us it can do, for bug reports.
+// Everything this device told us it can do, plus what it's reporting now, on
+// one line for pasting into a bug report.
 def logCapabilities() {
     log.info "Dreo ${device.displayName} capabilities: " + JsonOutput.toJson(([
         deviceType: state.deviceType, model: state.model,
@@ -586,11 +580,12 @@ def logCapabilities() {
         toggles: state.toggleMap, toggleLabels: state.toggleLabels,
         // Angles and sensors are deliberately not driven by this driver. Both
         // are reported raw here so they can be inspected for future work; every
-        // value is also in logRawState, and the full config is in the app's
+        // value is also under rawState below, and the full config is in the app's
         // device-list capture.
         angleConfigRaw : [fixed_angle: state.fanConfigRaw?.fixed_angle,
                           oscrange   : state.fanConfigRaw?.oscrange],
-        sensorConfigRaw: state.sensorConfigRaw
+        sensorConfigRaw: state.sensorConfigRaw,
+        rawState: state.raw
     ]))
 }
 

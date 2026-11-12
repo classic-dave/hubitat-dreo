@@ -86,7 +86,6 @@ metadata {
         command "setDryMode", [[name: "dryMode*", type: "ENUM", constraints: ["on", "off"]]]
 
         command "logCapabilities"
-        command "logRawState"
         command "sendDesired", [[name: "json*", type: "STRING",
                                  description: "Raw payload for probing, e.g. {\"rh_auto\":45}"]]
     }
@@ -401,11 +400,6 @@ def sendDesired(String json) {
     else       log.warn "sendDesired ${JsonOutput.toJson(desired)} rejected: status=${r?.status} data=${r?.data}"
 }
 
-def logRawState() {
-    if (!state.raw) { log.info "No state captured yet. Tap Refresh first."; return }
-    log.info "Dreo ${device.displayName} raw state: " + JsonOutput.toJson((state.raw))
-}
-
 def logCapabilities() {
     log.info "Dreo ${device.displayName} capabilities: " + JsonOutput.toJson(([
         model: state.model, presetModes: state.presetModes,
@@ -413,6 +407,7 @@ def logCapabilities() {
         humidityRange: state.humidityRange, fogLevelRange: state.fogLevelRange,
         sensorConfigRaw: state.sensorConfigRaw,
         calibrationRange: state.calibrationRange,
-        toggles: state.toggleMap, toggleLabels: state.toggleLabels
+        toggles: state.toggleMap, toggleLabels: state.toggleLabels,
+        rawState: state.raw
     ]))
 }

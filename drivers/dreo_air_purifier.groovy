@@ -75,7 +75,6 @@ metadata {
         command "setSelectOption", [[name: "select*", type: "STRING", description: "State field name"],
                                     [name: "option*", type: "STRING", description: "One of the options listed in selectStates"]]
         command "logCapabilities"
-        command "logRawState"
         command "sendDesired", [[name: "json*", type: "STRING",
                                  description: "Raw payload for probing, e.g. {\"mode\":\"Auto\"}"]]
     }
@@ -419,11 +418,6 @@ def sendDesired(String json) {
     else       log.warn "sendDesired ${JsonOutput.toJson(desired)} rejected: status=${r?.status} data=${r?.data}"
 }
 
-def logRawState() {
-    if (!state.raw) { log.info "No state captured yet. Tap Refresh first."; return }
-    log.info "Dreo ${device.displayName} raw state: " + JsonOutput.toJson((state.raw))
-}
-
 def logCapabilities() {
     log.info "Dreo ${device.displayName} capabilities: " + JsonOutput.toJson(([
         deviceType: state.deviceType, model: state.model,
@@ -432,7 +426,8 @@ def logCapabilities() {
         selects: state.selects,
         toggles: state.toggleMap, toggleLabels: state.toggleLabels,
         sensors: state.sensors, filterField: filterField(),
-        sensorConfigRaw: state.sensorConfigRaw
+        sensorConfigRaw: state.sensorConfigRaw,
+        rawState: state.raw
     ]))
 }
 

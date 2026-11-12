@@ -143,9 +143,9 @@ wants it makes a difference to what gets built next.
 
 ## Troubleshooting and reporting problems
 
-Every device page has two buttons worth knowing about. **logCapabilities**
-prints what the device told Hubitat it can do, and **logRawState** prints
-everything it is currently reporting. Both go to the Logs page.
+Every device page has a **logCapabilities** button. It prints what the device
+told Hubitat it can do and everything it's currently reporting, on one line in
+the Logs page.
 
 The app also has a **Diagnostics** section, which can:
 
