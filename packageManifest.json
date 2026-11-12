@@ -2,6 +2,7 @@
   "packageName": "Dreo Integration",
   "author": "classic-dave",
   "version": "0.3.0",
+  "betaVersion": "0.4.0",
   "minimumHEVersion": "2.3.4",
   "dateReleased": "2026-08-04",
   "tags": [
@@ -13,16 +14,28 @@
   "communityLink": "https://community.hubitat.com/t/beta-dreo-fan-integration-cloud/165215",
   "licenseFile": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/LICENSE",
   "releaseNotes": "0.3.0 adds air circulators, air purifiers, ceiling fans (with the light as a separate device) and humidifiers, alongside the tower fans supported previously. The app and Dreo Basic Device are always installed; tick the optional drivers matching the devices you own. Nothing is skipped during discovery: a device whose preferred driver is not installed is added with Dreo Basic Device, giving power and mode, and upgrades itself once you install that driver and tap Done. Dreo Fan replaces the old Dreo Tower Fan driver and covers everything it did, so existing rules keep working; change each fan's Type to Dreo Fan and re-save the app. Device Name holds the model, such as Dreo DR-HTF004S, and Device Label holds the name from your Dreo app, matching how a natively paired device is named.",
+  "betaReleaseNotes": "0.4.0 pre-release. Three things to try. First, every command now logs when the Dreo cloud rejects it, and the app logs what it sent and what came back when you turn on debug logging in the Dreo Integration app. If a command appears to do nothing, turn that on, repeat it, and post the three lines: what was sent, the response, and the device state that follows a few seconds later. Second, air purifiers now use a new Dreo Air Purifier driver instead of Dreo Fan, so they no longer show oscillation and display controls they do not have. A purifier you already added keeps Dreo Fan until you deselect it in the app and add it again. If the new driver misbehaves, change the device Type back to Dreo Fan and re-save. Filter life and the speed fix are written from upstream's description and have not been tested on real hardware, so please run logCapabilities and post it. Third, the preset mode dropdown now reads the device's own mode list. If it still shows Normal, Natural, Sleep and Auto on a device that reports something else, leave the device page, hard-reload your browser, then run logPresetModeSource and post the output. This pre-release also installs Dreo Endpoint Probe, a temporary read-only diagnostic for the device detection reports in the community thread. It logs in, calls Dreo's device list endpoints, and writes a report with serial numbers replaced. It never sends a control command and never creates a device. Both the probe and this pre-release go away at 0.4.0.",
   "apps": [
     {
       "id": "9cd9e08a-006e-4743-acd3-c544efd273a6",
       "name": "Dreo Integration",
       "namespace": "community",
       "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/apps/dreo_integration.groovy",
+      "betaLocation": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/apps/dreo_integration.groovy",
       "required": true,
       "oauth": false,
       "primary": true,
       "description": "Required. Handles the Dreo account, device discovery and polling."
+    },
+    {
+      "id": "0f1b62db-704b-4084-a60e-b7e2a054191c",
+      "name": "Dreo Endpoint Probe",
+      "namespace": "classic-dave",
+      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/apps/dreo_endpoint_probe.groovy",
+      "betaLocation": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/apps/dreo_endpoint_probe.groovy",
+      "required": false,
+      "oauth": false,
+      "description": "Temporary diagnostic for the device detection reports. Read-only: it logs in, calls the device list endpoints and writes a report with serial numbers replaced. Removed at 0.4.0."
     }
   ],
   "drivers": [
@@ -31,6 +44,7 @@
       "name": "Dreo Basic Device",
       "namespace": "community",
       "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_basic_device.groovy",
+      "betaLocation": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/drivers/dreo_basic_device.groovy",
       "required": true,
       "description": "Required. Power, mode and diagnostics for every Dreo device, and the fallback for anything the other drivers do not model."
     },
@@ -39,14 +53,25 @@
       "name": "Dreo Fan",
       "namespace": "community",
       "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_fan.groovy",
+      "betaLocation": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/drivers/dreo_fan.groovy",
       "required": false,
       "description": "Tower fans, air circulators, air purifiers and evaporative coolers. Also used by ceiling fans. Tick this if you own any Dreo fan."
+    },
+    {
+      "id": "fbd06a60-d3a0-4ef2-87fc-8d6a4148ad26",
+      "name": "Dreo Air Purifier",
+      "namespace": "community",
+      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/drivers/dreo_air_purifier.groovy",
+      "betaLocation": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/drivers/dreo_air_purifier.groovy",
+      "required": false,
+      "description": "Only needed for air purifiers. New in 0.4.0; previously purifiers used Dreo Fan."
     },
     {
       "id": "ab915ae4-a09d-42d4-86ab-455d64ae43f5",
       "name": "Dreo Fan Light",
       "namespace": "community",
       "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_fan_light.groovy",
+      "betaLocation": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/drivers/dreo_fan_light.groovy",
       "required": false,
       "description": "Only needed for ceiling fans. Creates the light as its own device."
     },
@@ -55,6 +80,7 @@
       "name": "Dreo Humidifier",
       "namespace": "community",
       "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/main/drivers/dreo_humidifier.groovy",
+      "betaLocation": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/drivers/dreo_humidifier.groovy",
       "required": false,
       "description": "Only needed for humidifiers."
     }
