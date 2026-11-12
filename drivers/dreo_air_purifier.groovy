@@ -29,10 +29,6 @@ import groovy.transform.Field
 
 @Field static final String DRIVER_VERSION = "0.4.0"
 
-// Fallback preset list, used only when the device has not handed its own list
-// down yet. See modeConstraints().
-@Field static final List FALLBACK_MODES = ["Normal", "Natural", "Sleep", "Auto"]
-
 // Wire field -> semantic attribute, same mapping Dreo Fan uses, minus the
 // ones a purifier does not have.
 @Field static final Map TOGGLE_ATTR_FOR_KEY = [
@@ -70,7 +66,8 @@ metadata {
         command "setExactSpeed", [[name: "level*", type: "NUMBER", description: "Exact speed within the purifier's range"]]
         command "speedUp"
         command "speedDown"
-        command "setPresetMode", [[name: "mode*", type: "ENUM", constraints: modeConstraints()]]
+        command "setPresetMode", [[name: "mode*", type: "STRING", description: "A preset mode this purifier has. Listed under Preset Modes in State Variables"]]
+        command "cyclePresetMode"
         command "setPanelSound", [[name: "panelSound*", type: "ENUM", constraints: ["on", "off"]]]
         command "setChildLock", [[name: "childLock*", type: "ENUM", constraints: ["on", "off"]]]
         command "setDisplay", [[name: "display*", type: "ENUM", constraints: ["on", "off"]]]
@@ -79,7 +76,6 @@ metadata {
                                     [name: "option*", type: "STRING", description: "One of the options listed in selectStates"]]
         command "logCapabilities"
         command "logRawState"
-        command "logPresetModeSource"
         command "sendDesired", [[name: "json*", type: "STRING",
                                  description: "Raw payload for probing, e.g. {\"mode\":\"Auto\"}"]]
     }
@@ -88,33 +84,22 @@ metadata {
     }
 }
 
-// The command dropdown is built while the driver's metadata is evaluated, and
-// state is not this device's state at that point, so state.presetModes is not
-// readable here. A data value is, so configureMeta writes the real list there
-// and this reads it back. Stored comma-separated rather than as JSON to keep
-// metadata evaluation free of parsing.
-//
-// If this returns FALLBACK_MODES on a device whose own list is different, the
-// mechanism does not work on this hub platform and the dropdown is wrong.
-// logPresetModeSource() prints both so a tester can say which happened.
-def modeConstraints() {
-    def raw = null
-    try { raw = device?.getDataValue("presetModes") } catch (ignored) { }
-    if (!raw) return FALLBACK_MODES
-    def list = raw.split(",").collect { it.trim() }.findAll { it }
-    return list ?: FALLBACK_MODES
+// Commands that take a mode name take free text. A dropdown can't show a
+// device's own list, because Hubitat builds a driver's command dropdowns once,
+// with no device to read from. Matching ignores case and returns the device's
+// own spelling.
+private String matchOption(input, List valid) {
+    def s = input?.toString()?.trim()
+    if (!s) return null
+    return valid?.find { it?.toString()?.equalsIgnoreCase(s) }?.toString()
 }
 
-def logPresetModeSource() {
-    def dv = null
-    try { dv = device?.getDataValue("presetModes") } catch (e) { dv = "unreadable: ${e}" }
-    log.info "Dreo ${device.displayName} preset modes: " + JsonOutput.toJson(([
-        dataValue        : dv,
-        statePresetModes  : state.presetModes,
-        dropdownResolvesTo: modeConstraints(),
-        fallback         : FALLBACK_MODES,
-        usingFallback    : (modeConstraints() == FALLBACK_MODES)
-    ]))
+// The entry after current in list, wrapping at the end. Starts at the first
+// entry when current isn't in the list.
+private String nextOption(current, List list) {
+    if (!list) return null
+    def i = list.findIndexOf { it?.toString()?.equalsIgnoreCase(current?.toString() ?: "") }
+    return list[(i + 1) % list.size()]?.toString()
 }
 
 // ---------- Lifecycle ----------
@@ -138,10 +123,6 @@ def configureMeta(Map m) {
     state.fanConfigRaw = m.fanConfig
     state.sensorConfigRaw = m.sensorConfig
 
-    // Written for modeConstraints(), which cannot read state. Order is the
-    // device's own order so the dropdown matches what the Dreo app shows.
-    updateDataValue("presetModes", (state.presetModes ?: []).join(","))
-
     applyToggleConfig(m.toggles)
     applySelectConfig(m.selectConfig)
     applySensorConfig(m.sensorConfig)
@@ -156,9 +137,6 @@ def configureMeta(Map m) {
              "modes ${state.presetModes}, manual mode ${manualModeName() ?: 'not found'}, " +
              "sensors ${(state.sensors ?: [:]).keySet()}, selects ${(state.selects ?: [:]).keySet()}, " +
              "toggles ${state.toggleMap}"
-    log.info "Dreo purifier ${device.displayName}: the preset dropdown is rebuilt when the device page " +
-             "loads. If it still shows ${FALLBACK_MODES}, leave the page, hard-reload the browser, then " +
-             "run logPresetModeSource and post the output."
 }
 
 private void applyToggleConfig(List toggles) {
@@ -347,7 +325,8 @@ def setExactSpeed(level) {
     def manual = manualModeName()
     def current = device.currentValue("mode")
     if (manual && current && !current.equalsIgnoreCase(manual)) {
-        desired["mode"] = manual
+        // Dreo's own integration sends lowercase here whatever the list says.
+        desired["mode"] = "manual"
         log.info "Switching to ${manual} so the speed change takes effect (was ${current})"
     } else if (!manual) {
         log.warn "This purifier lists no manual preset (${state.presetModes}), so a speed change " +
@@ -359,7 +338,7 @@ def setExactSpeed(level) {
         sendEvent(name: "switch", value: "on")
         sendEvent(name: "speedLevel", value: lvl)
         sendEvent(name: "speed", value: namedFromLevel(lvl))
-        if (desired.mode) sendEvent(name: "mode", value: desired.mode)
+        if (desired.mode) sendEvent(name: "mode", value: manual)
     } else {
         logFailure("setExactSpeed(${lvl})", r)
     }
@@ -369,11 +348,24 @@ def speedUp()   { setExactSpeed(((device.currentValue("speedLevel") ?: state.spe
 def speedDown() { setExactSpeed(((device.currentValue("speedLevel") ?: state.speedMin ?: 1) as Integer) - 1) }
 
 def setPresetMode(mode) {
-    def valid = state.presetModes
-    if (valid && !(mode in valid)) log.warn "Preset mode '${mode}' not in ${valid}; sending anyway"
-    def r = sendControl([mode: mode])
-    if (r?.ok) sendEvent(name: "mode", value: mode)
-    else logFailure("setPresetMode(${mode})", r)
+    def valid = state.presetModes ?: []
+    def target = mode?.toString()?.trim()
+    if (!target) { log.warn "setPresetMode: no mode given. This purifier has: ${valid}"; return }
+    if (valid) {
+        def m = matchOption(target, valid)
+        if (!m) { log.warn "'${target}' isn't a preset mode on this purifier, so nothing was sent. It has: ${valid}"; return }
+        target = m
+    }
+    def r = sendControl([mode: target])
+    if (r?.ok) sendEvent(name: "mode", value: target)
+    else logFailure("setPresetMode(${target})", r)
+}
+
+// Steps to the next mode in this purifier's own list, in its own order.
+def cyclePresetMode() {
+    def valid = state.presetModes ?: []
+    if (!valid) { log.warn "This purifier hasn't reported its preset modes. Tap Done in the Dreo Integration app, then try again."; return }
+    setPresetMode(nextOption(device.currentValue("mode"), valid))
 }
 
 def setSelectOption(String selectName, String option) {

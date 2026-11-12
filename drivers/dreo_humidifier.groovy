@@ -76,7 +76,8 @@ metadata {
         attribute "adaptiveDisplay", "string"
 
         command "togglePower"
-        command "setMode", [[name: "mode*", type: "ENUM", constraints: modeConstraints()]]
+        command "setMode", [[name: "mode*", type: "STRING", description: "A mode this humidifier has, e.g. Auto. Listed under Preset Modes in State Variables"]]
+        command "cycleMode"
         command "setHumiditySetpoint", [[name: "humidity*", type: "NUMBER", description: "Target relative humidity, %"]]
         command "setFogLevel", [[name: "level*", type: "NUMBER", description: "Mist output level"]]
         command "setCalibration", [[name: "offset*", type: "NUMBER", description: "Humidity sensor offset"]]
@@ -94,7 +95,23 @@ metadata {
     }
 }
 
-def modeConstraints() { return (state?.presetModes ?: ["Manual", "Auto", "Sleep"]) }
+// Commands that take a mode name take free text. A dropdown can't show a
+// device's own list, because Hubitat builds a driver's command dropdowns once,
+// with no device to read from. Matching ignores case and returns the device's
+// own spelling.
+private String matchOption(input, List valid) {
+    def s = input?.toString()?.trim()
+    if (!s) return null
+    return valid?.find { it?.toString()?.equalsIgnoreCase(s) }?.toString()
+}
+
+// The entry after current in list, wrapping at the end. Starts at the first
+// entry when current isn't in the list.
+private String nextOption(current, List list) {
+    if (!list) return null
+    def i = list.findIndexOf { it?.toString()?.equalsIgnoreCase(current?.toString() ?: "") }
+    return list[(i + 1) % list.size()]?.toString()
+}
 
 // ---------- Lifecycle ----------
 
@@ -266,13 +283,26 @@ def off() { def r = sendControl([power_switch: false]); if (r?.ok) sendEvent(nam
 def togglePower() { (device.currentValue("switch") == "on") ? off() : on() }
 
 def setMode(mode) {
-    def valid = state.presetModes
-    if (valid && !(mode in valid)) { log.warn "Mode '${mode}' not in ${valid}"; return }
-    def desired = [mode: mode]
+    def valid = state.presetModes ?: []
+    def target = mode?.toString()?.trim()
+    if (!target) { log.warn "setMode: no mode given. This humidifier has: ${valid}"; return }
+    if (valid) {
+        def m = matchOption(target, valid)
+        if (!m) { log.warn "'${target}' isn't a mode on this humidifier, so nothing was sent. It has: ${valid}"; return }
+        target = m
+    }
+    def desired = [mode: target]
     if (device.currentValue("switch") != "on") desired["power_switch"] = true
     def r = sendControl(desired)
-    if (r?.ok) sendEvent(name: "mode", value: mode)
-    else logFailure("setMode(${mode})", r)
+    if (r?.ok) sendEvent(name: "mode", value: target)
+    else logFailure("setMode(${target})", r)
+}
+
+// Steps to the next mode in this humidifier's own list, in its own order.
+def cycleMode() {
+    def valid = state.presetModes ?: []
+    if (!valid) { log.warn "This humidifier hasn't reported its modes. Tap Done in the Dreo Integration app, then try again."; return }
+    setMode(nextOption(device.currentValue("mode"), valid))
 }
 
 def setHumiditySetpoint(humidity) {

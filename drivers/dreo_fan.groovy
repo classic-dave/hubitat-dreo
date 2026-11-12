@@ -86,10 +86,12 @@ metadata {
         command "setExactSpeed", [[name: "level*", type: "NUMBER", description: "Exact speed within the fan's range"]]
         command "speedUp"
         command "speedDown"
-        command "setPresetMode", [[name: "mode*", type: "ENUM", constraints: modeConstraints()]]
+        command "setPresetMode", [[name: "mode*", type: "STRING", description: "A preset mode this fan has, e.g. Sleep. Listed under Preset Modes in State Variables"]]
+        command "cyclePresetMode"
         command "setOscillate", [[name: "oscillate*", type: "ENUM", constraints: ["on", "off"]]]
         command "toggleOscillate"
-        command "setOscillationMode", [[name: "mode*", type: "ENUM", constraints: oscModeConstraints()]]
+        command "setOscillationMode", [[name: "mode*", type: "STRING", description: "An oscillation mode this fan has, e.g. Horizontal. Listed under Osc Options in State Variables"]]
+        command "cycleOscillationMode"
         command "setPanelSound", [[name: "panelSound*", type: "ENUM", constraints: ["on", "off"]]]
         command "setChildLock", [[name: "childLock*", type: "ENUM", constraints: ["on", "off"]]]
         command "setDisplay", [[name: "display*", type: "ENUM", constraints: ["on", "off"]]]
@@ -101,7 +103,6 @@ metadata {
                                     [name: "option*", type: "STRING", description: "One of the options listed in selectStates"]]
         command "logCapabilities"
         command "logRawState"
-        command "logPresetModeSource"
         command "sendDesired", [[name: "json*", type: "STRING",
                                  description: "Raw payload for probing, e.g. {\"oscmode\":\"Horizontal\"}"]]
     }
@@ -110,49 +111,22 @@ metadata {
     }
 }
 
-// The command dropdowns are built while this driver's metadata is evaluated,
-// and state is not this device's state at that point, so state.presetModes is
-// not readable here. A data value is, so configureMeta writes the real lists
-// there and these read them back, falling back to what they always returned.
-// Stored comma-separated to keep metadata evaluation free of JSON parsing.
-@Field static final List FALLBACK_MODES     = ["Normal", "Natural", "Sleep", "Auto"]
-@Field static final List FALLBACK_OSC_MODES = ["Fixed", "Horizontal", "Vertical", "Both"]
-
-private static List csvOrDefault(String raw, List fallback) {
-    if (!raw) return fallback
-    def list = raw.split(",").collect { it.trim() }.findAll { it }
-    return list ?: fallback
+// Commands that take a mode name take free text. A dropdown can't show a
+// device's own list, because Hubitat builds a driver's command dropdowns once,
+// with no device to read from. Matching ignores case and returns the device's
+// own spelling.
+private String matchOption(input, List valid) {
+    def s = input?.toString()?.trim()
+    if (!s) return null
+    return valid?.find { it?.toString()?.equalsIgnoreCase(s) }?.toString()
 }
 
-def modeConstraints() {
-    def raw = null
-    try { raw = device?.getDataValue("presetModes") } catch (ignored) { }
-    return csvOrDefault(raw, FALLBACK_MODES)
-}
-
-def oscModeConstraints() {
-    def raw = null
-    try { raw = device?.getDataValue("oscOptions") } catch (ignored) { }
-    return csvOrDefault(raw, FALLBACK_OSC_MODES)
-}
-
-// Prints what the dropdown resolved to and where it came from, so a tester can
-// say whether the data value mechanism works on their hub platform.
-def logPresetModeSource() {
-    def dv = null
-    def ov = null
-    try { dv = device?.getDataValue("presetModes") } catch (e) { dv = "unreadable: ${e}" }
-    try { ov = device?.getDataValue("oscOptions") } catch (e) { ov = "unreadable: ${e}" }
-    log.info "Dreo ${device.displayName} dropdown sources: " + JsonOutput.toJson(([
-        presetModesDataValue : dv,
-        statePresetModes     : state.presetModes,
-        presetDropdown       : modeConstraints(),
-        presetUsingFallback  : (modeConstraints() == FALLBACK_MODES),
-        oscOptionsDataValue  : ov,
-        stateOscOptions      : state.oscOptions,
-        oscDropdown          : oscModeConstraints(),
-        oscUsingFallback     : (oscModeConstraints() == FALLBACK_OSC_MODES)
-    ]))
+// The entry after current in list, wrapping at the end. Starts at the first
+// entry when current isn't in the list.
+private String nextOption(current, List list) {
+    if (!list) return null
+    def i = list.findIndexOf { it?.toString()?.equalsIgnoreCase(current?.toString() ?: "") }
+    return list[(i + 1) % list.size()]?.toString()
 }
 
 // ---------- Lifecycle ----------
@@ -184,11 +158,6 @@ def configureMeta(Map m) {
     applyToggleConfig(m.toggles)
     applySelectConfig(m.selectConfig)
     manageLightChild(m)
-
-    // Written for modeConstraints() and oscModeConstraints(), which cannot read
-    // state. applySelectConfig has to run first; it is what sets oscOptions.
-    updateDataValue("presetModes", (state.presetModes ?: []).join(","))
-    updateDataValue("oscOptions", (state.oscOptions ?: []).join(","))
 
     sendEvent(name: "driverVersion", value: DRIVER_VERSION)
     if (m.deviceType) sendEvent(name: "deviceType", value: m.deviceType)
@@ -458,11 +427,24 @@ def speedUp()   { setExactSpeed(((device.currentValue("speedLevel") ?: state.spe
 def speedDown() { setExactSpeed(((device.currentValue("speedLevel") ?: state.speedMin ?: 1) as Integer) - 1) }
 
 def setPresetMode(mode) {
-    def valid = state.presetModes
-    if (valid && !(mode in valid)) log.warn "Preset mode '${mode}' not in ${valid}; sending anyway"
-    def r = sendControl([mode: mode])
-    if (r?.ok) sendEvent(name: "mode", value: mode)
-    else logFailure("setPresetMode(${mode})", r)
+    def valid = state.presetModes ?: []
+    def target = mode?.toString()?.trim()
+    if (!target) { log.warn "setPresetMode: no mode given. This device has: ${valid}"; return }
+    if (valid) {
+        def m = matchOption(target, valid)
+        if (!m) { log.warn "'${target}' isn't a preset mode on this device, so nothing was sent. It has: ${valid}"; return }
+        target = m
+    }
+    def r = sendControl([mode: target])
+    if (r?.ok) sendEvent(name: "mode", value: target)
+    else logFailure("setPresetMode(${target})", r)
+}
+
+// Steps to the next mode in this device's own list, in its own order.
+def cyclePresetMode() {
+    def valid = state.presetModes ?: []
+    if (!valid) { log.warn "This device hasn't reported its preset modes. Tap Done in the Dreo Integration app, then try again."; return }
+    setPresetMode(nextOption(device.currentValue("mode"), valid))
 }
 
 // Boolean oscillation. On tower fans this writes the oscillate field directly.
@@ -493,7 +475,25 @@ def setOscillate(value) {
 
 def toggleOscillate() { setOscillate(device.currentValue("oscillating") == "on" ? "off" : "on") }
 
-def setOscillationMode(mode) { setSelectOption("oscmode", mode?.toString()) }
+def setOscillationMode(mode) {
+    def opts = state.oscOptions ?: []
+    def target = mode?.toString()?.trim()
+    if (opts) {
+        def m = matchOption(target, opts)
+        if (!m) { log.warn "'${target}' isn't an oscillation mode on this device, so nothing was sent. It has: ${opts}"; return }
+        target = m
+    }
+    setSelectOption("oscmode", target)
+}
+
+// Steps to the next oscillation mode. Tower fans only have on and off, so
+// there it's the same as toggleOscillate.
+def cycleOscillationMode() {
+    if (state.oscBoolField) { toggleOscillate(); return }
+    def opts = state.oscOptions ?: []
+    if (!opts) { log.warn "This device reports no oscillation modes."; return }
+    setOscillationMode(nextOption(device.currentValue("oscillationMode"), opts))
+}
 
 // Generic config-driven select. Upstream powers the device on when setting one,
 // so a select from an off state doesn't silently no-op.
