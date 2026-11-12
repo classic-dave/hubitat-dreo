@@ -204,7 +204,7 @@ private void applySensorConfig(cfg) {
     }
     if (!(cfg instanceof Map)) {
         log.warn "Dreo purifier ${device.displayName}: sensor_entity_config is a " +
-                 "${cfg.getClass().getSimpleName()}, not a map. Filter life is off. " +
+                 "${typeName(cfg)}, not a map. Filter life is off. " +
                  "Please run logCapabilities and post the output."
         state.sensors = sensors
         return
@@ -224,6 +224,18 @@ private void applySensorConfig(cfg) {
     if (!sensors) {
         log.info "Dreo purifier ${device.displayName}: no sensors in sensor_entity_config, so no filter life."
     }
+}
+
+// Hubitat's sandbox rejects reflection on an object's class, so name the
+// type with instanceof checks instead.
+private String typeName(x) {
+    if (x == null) return "null"
+    if (x instanceof Map) return "Map"
+    if (x instanceof List) return "List"
+    if (x instanceof String) return "String"
+    if (x instanceof Number) return "Number"
+    if (x instanceof Boolean) return "Boolean"
+    return "unrecognized type"
 }
 
 // The field a filter-life sensor reports under. Matched from this device's own
