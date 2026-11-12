@@ -1,12 +1,12 @@
 /**
- * Dreo Integration - Hubitat parent app  (0.3.0)
+ * Dreo Integration - Hubitat parent app  (0.4.0)
  *
  * Shared account/auth/token lifecycle, device discovery, child creation, and the
  * single poll loop for all Dreo devices. Child drivers hold per-device semantics
  * and delegate HTTP back here (deviceControl / deviceRefresh). Transport matches
  * pydreo-cloud 1.0.0. See README for install steps and adding new device types.
  *
- * 0.3.0 note: the Diagnostics section provides for remote beta testing: sanitised device
+ * 0.3.0 note: the Diagnostics section provides for remote beta testing: sanitized device
  * dumps, per-device state capture with snapshot/diff, a raw command console, and
  * an optional generic-driver fallback for device types with no purpose-built
  * driver yet.
@@ -21,7 +21,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String APP_VERSION            = "0.3.0"
+@Field static final String APP_VERSION            = "0.4.0"
 @Field static final String DEFAULT_CLIENT_ID      = "89ef537b2202481aaaf9077068bcb0c9"
 @Field static final String DEFAULT_CLIENT_SECRET  = "41b20a1f60e9499e89c8646c31f93ea1"
 @Field static final String NA_BASE_URL            = "https://open-api-us.dreo-tech.com"
@@ -37,7 +37,7 @@ import groovy.transform.Field
     "circulation_fan"     : "Dreo Fan",
     "ceiling_fan"         : "Dreo Fan",
     "rgblight_ceiling_fan": "Dreo Fan",
-    "hap"                 : "Dreo Fan",
+    "hap"                 : "Dreo Air Purifier",
     "hec"                 : "Dreo Fan",         // evaporative cooler: a fan with a
                                                 // water tank. Speed, modes and
                                                 // oscillation work; humidity does
@@ -236,7 +236,7 @@ def pollAll() { getChildDevices().each { deviceRefresh(it) } }
 // ---------- Discovery (find only) + child reconciliation (on save) ----------
 
 // Fetch the account's devices and record supported ones for the multi-select.
-// Does NOT create child devices. Also builds the sanitised diagnostic dump.
+// Does NOT create child devices. Also builds the sanitized diagnostic dump.
 def discoverList() {
     def r = authedGet("/api/device/list")
     if (logEnable) log.debug "Dreo device list: ${r.data}"
@@ -448,7 +448,13 @@ private boolean advertisesFan(Map dev) {
 // Send a control payload for a device serial. Returns [ok, status, data].
 Map deviceControl(String sn, Map desired) {
     if (!sn) { log.warn "Dreo control ignored: child has no deviceSn"; return [ok: false] }
-    return authedPost("/api/device/control", [devicesn: sn, desired: desired])
+    // Every command from every driver funnels through here, so this is the one
+    // place that can say what was actually sent. A command the cloud accepts
+    // and the device then ignores looks identical to a working one without it.
+    if (logEnable) log.debug "Dreo control -> ${sn}: ${JsonOutput.toJson(desired)}"
+    def r = authedPost("/api/device/control", [devicesn: sn, desired: desired])
+    if (logEnable) log.debug "Dreo control <- ${sn}: ok=${r?.ok} status=${r?.status} body=${r?.data}"
+    return r
 }
 
 // Fetch a device's live property map, or null on failure.

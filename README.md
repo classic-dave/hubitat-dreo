@@ -28,7 +28,7 @@ likely work even if it is newer than anything listed.
 | --- | --- | --- |
 | Dreo Basic Device | Air conditioners (`DR-HAC`), heaters, anything unrecognised | Power and mode only, untested |
 | Dreo Fan | Air circulators (`DR-HAF`, `DR-HPF`) | Working, confirmed by a tester |
-| Dreo Fan | Air purifiers (`DR-HAP`) | Working, confirmed by a tester |
+| Dreo Air Purifier | Air purifiers (`DR-HAP`) | New in 0.4.0, nobody has tested it |
 | Dreo Fan + Dreo Fan Light | Ceiling fans (`DR-HCF`) | Written, nobody has tested it |
 | Dreo Fan | Evaporative coolers (`DR-HEC`) | Fan side only, untested |
 | Dreo Fan | Tower fans (`DR-HTF`) | Working |
@@ -68,7 +68,8 @@ Dreo device whatsoever. HPM then asks which optional drivers you want:
 
 | Tick | If you have |
 | --- | --- |
-| Dreo Fan | Any fan, air circulator, air purifier, ceiling fan or evaporative cooler |
+| Dreo Fan | Any fan, air circulator, ceiling fan or evaporative cooler |
+| Dreo Air Purifier | An air purifier |
 | Dreo Fan Light | A ceiling fan, alongside Dreo Fan. Adds the light as its own device |
 | Dreo Humidifier | A humidifier |
 
@@ -83,7 +84,8 @@ Install `dreo_basic_device.groovy` plus the drivers for what you own.
 | If you have | Install from `drivers/` |
 | --- | --- |
 | Everyone | `dreo_basic_device.groovy` |
-| Any fan, circulator or purifier | `dreo_fan.groovy` |
+| Any fan, circulator or evaporative cooler | `dreo_fan.groovy` |
+| An air purifier | `dreo_air_purifier.groovy` |
 | A ceiling fan | `dreo_fan.groovy` **and** `dreo_fan_light.groovy` |
 | A humidifier | `dreo_humidifier.groovy` |
 

@@ -1,5 +1,5 @@
 /**
- * Dreo Fan Light - Hubitat component driver, child of Dreo Fan  (0.3.0)
+ * Dreo Fan Light - Hubitat component driver, child of Dreo Fan  (0.4.0)
  *
  * The light on a Dreo ceiling fan. Created automatically by Dreo Fan when the
  * device's config advertises a light_entity_config, so it is never installed by
@@ -24,7 +24,7 @@
 
 import groovy.transform.Field
 
-@Field static final String DRIVER_VERSION = "0.3.0"
+@Field static final String DRIVER_VERSION = "0.4.0"
 
 metadata {
     definition(name: "Dreo Fan Light", namespace: "community", author: "classic-dave") {

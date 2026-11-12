@@ -1,5 +1,5 @@
 /**
- * Dreo Fan - Hubitat driver, child of the Dreo Integration app  (0.3.0)
+ * Dreo Fan - Hubitat driver, child of the Dreo Integration app  (0.4.0)
  *
  * The default Dreo driver. Serves any device whose behaviour is fully described
  * by its own config payload rather than by hardcoded model knowledge:
@@ -40,7 +40,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String DRIVER_VERSION = "0.3.0"
+@Field static final String DRIVER_VERSION = "0.4.0"
 
 // Config key in toggle_entity_config -> semantic attribute here.
 // LEGACY: Dreo Tower Fan exposed the led_switch display toggle as "adaptiveDisplay".
@@ -101,6 +101,7 @@ metadata {
                                     [name: "option*", type: "STRING", description: "One of the options listed in selectStates"]]
         command "logCapabilities"
         command "logRawState"
+        command "logPresetModeSource"
         command "sendDesired", [[name: "json*", type: "STRING",
                                  description: "Raw payload for probing, e.g. {\"oscmode\":\"Horizontal\"}"]]
     }
@@ -109,8 +110,50 @@ metadata {
     }
 }
 
-def modeConstraints()    { return (state?.presetModes ?: ["Normal", "Natural", "Sleep", "Auto"]) }
-def oscModeConstraints() { return (state?.oscOptions ?: ["Fixed", "Horizontal", "Vertical", "Both"]) }
+// The command dropdowns are built while this driver's metadata is evaluated,
+// and state is not this device's state at that point, so state.presetModes is
+// not readable here. A data value is, so configureMeta writes the real lists
+// there and these read them back, falling back to what they always returned.
+// Stored comma-separated to keep metadata evaluation free of JSON parsing.
+@Field static final List FALLBACK_MODES     = ["Normal", "Natural", "Sleep", "Auto"]
+@Field static final List FALLBACK_OSC_MODES = ["Fixed", "Horizontal", "Vertical", "Both"]
+
+private static List csvOrDefault(String raw, List fallback) {
+    if (!raw) return fallback
+    def list = raw.split(",").collect { it.trim() }.findAll { it }
+    return list ?: fallback
+}
+
+def modeConstraints() {
+    def raw = null
+    try { raw = device?.getDataValue("presetModes") } catch (ignored) { }
+    return csvOrDefault(raw, FALLBACK_MODES)
+}
+
+def oscModeConstraints() {
+    def raw = null
+    try { raw = device?.getDataValue("oscOptions") } catch (ignored) { }
+    return csvOrDefault(raw, FALLBACK_OSC_MODES)
+}
+
+// Prints what the dropdown resolved to and where it came from, so a tester can
+// say whether the data value mechanism works on their hub platform.
+def logPresetModeSource() {
+    def dv = null
+    def ov = null
+    try { dv = device?.getDataValue("presetModes") } catch (e) { dv = "unreadable: ${e}" }
+    try { ov = device?.getDataValue("oscOptions") } catch (e) { ov = "unreadable: ${e}" }
+    log.info "Dreo ${device.displayName} dropdown sources:\n" + JsonOutput.prettyPrint(JsonOutput.toJson([
+        presetModesDataValue : dv,
+        statePresetModes     : state.presetModes,
+        presetDropdown       : modeConstraints(),
+        presetUsingFallback  : (modeConstraints() == FALLBACK_MODES),
+        oscOptionsDataValue  : ov,
+        stateOscOptions      : state.oscOptions,
+        oscDropdown          : oscModeConstraints(),
+        oscUsingFallback     : (oscModeConstraints() == FALLBACK_OSC_MODES)
+    ]))
+}
 
 // ---------- Lifecycle ----------
 
@@ -141,6 +184,11 @@ def configureMeta(Map m) {
     applyToggleConfig(m.toggles)
     applySelectConfig(m.selectConfig)
     manageLightChild(m)
+
+    // Written for modeConstraints() and oscModeConstraints(), which cannot read
+    // state. applySelectConfig has to run first; it is what sets oscOptions.
+    updateDataValue("presetModes", (state.presetModes ?: []).join(","))
+    updateDataValue("oscOptions", (state.oscOptions ?: []).join(","))
 
     sendEvent(name: "driverVersion", value: DRIVER_VERSION)
     if (m.deviceType) sendEvent(name: "deviceType", value: m.deviceType)
@@ -255,8 +303,8 @@ private Integer clampFromConfig(String key, Integer value, Integer dLo, Integer 
 
 // Component callbacks. The child speaks percent in both directions; kelvin
 // conversion lives in the child because the endpoints are its preferences.
-def componentOn(cd)  { def r = sendControl([light_switch: true]);  if (r?.ok) cd.parse([[name: "switch", value: "on"]]) }
-def componentOff(cd) { def r = sendControl([light_switch: false]); if (r?.ok) cd.parse([[name: "switch", value: "off"]]) }
+def componentOn(cd)  { def r = sendControl([light_switch: true]);  if (r?.ok) cd.parse([[name: "switch", value: "on"]])  else logFailure("light on", r) }
+def componentOff(cd) { def r = sendControl([light_switch: false]); if (r?.ok) cd.parse([[name: "switch", value: "off"]]) else logFailure("light off", r) }
 def componentRefresh(cd) { refresh() }
 
 def componentSetLevel(cd, level) {
@@ -265,13 +313,14 @@ def componentSetLevel(cd, level) {
     pct = clampFromConfig("brightness_percentage", pct, 1, 100)
     def r = sendControl([light_switch: true, brightness: pct])
     if (r?.ok) cd.parse([[name: "switch", value: "on"], [name: "level", value: pct, unit: "%"]])
+    else logFailure("setLevel(${pct}%)", r)
 }
 
 def componentSetColorTempPercent(cd, percent) {
     def pct = clampFromConfig("color_temperature_range", percent as Integer, 1, 100)
     def r = sendControl([colortemp: pct])
     if (r?.ok) cd.parse([[name: "colorTemperaturePercent", value: pct]])
-    else log.warn "Setting colour temperature to ${pct}% failed: status=${r?.status} data=${r?.data}. " +
+    else log.warn "Setting color temperature to ${pct}% failed: status=${r?.status} data=${r?.data}. " +
                   "If this only fails while the light is off, please report it."
 }
 
@@ -361,8 +410,16 @@ private Map sendControl(Map desired) {
     return r
 }
 
-def on()  { def r = sendControl([power_switch: true]);  if (r?.ok) sendEvent(name: "switch", value: "on") }
-def off() { def r = sendControl([power_switch: false]); if (r?.ok) { sendEvent(name: "switch", value: "off"); sendEvent(name: "speed", value: "off") } }
+// Log a control call the Dreo cloud did not accept. Mirrors setToggleField,
+// which has logged its failures since 0.3.0, so every command now leaves a
+// trace either way and a command that did nothing can be told apart from one
+// that worked.
+private void logFailure(String what, Map r) {
+    log.warn "${what} failed: status=${r?.status} data=${r?.data}"
+}
+
+def on()  { def r = sendControl([power_switch: true]);  if (r?.ok) sendEvent(name: "switch", value: "on") else logFailure("on", r) }
+def off() { def r = sendControl([power_switch: false]); if (r?.ok) { sendEvent(name: "switch", value: "off"); sendEvent(name: "speed", value: "off") } else logFailure("off", r) }
 def togglePower() { (device.currentValue("switch") == "on") ? off() : on() }
 
 def setSpeed(fanspeed) {
@@ -392,6 +449,8 @@ def setExactSpeed(level) {
         sendEvent(name: "switch", value: "on")
         sendEvent(name: "speedLevel", value: lvl)
         sendEvent(name: "speed", value: namedFromLevel(lvl))
+    } else {
+        logFailure("setExactSpeed(${lvl})", r)
     }
 }
 
@@ -403,6 +462,7 @@ def setPresetMode(mode) {
     if (valid && !(mode in valid)) log.warn "Preset mode '${mode}' not in ${valid}; sending anyway"
     def r = sendControl([mode: mode])
     if (r?.ok) sendEvent(name: "mode", value: mode)
+    else logFailure("setPresetMode(${mode})", r)
 }
 
 // Boolean oscillation. On tower fans this writes the oscillate field directly.
@@ -414,6 +474,7 @@ def setOscillate(value) {
     if (state.oscBoolField) {
         def r = sendControl([(state.oscBoolField): wantOn])
         if (r?.ok) sendEvent(name: "oscillating", value: wantOn ? "on" : "off")
+        else logFailure("setOscillate(${value})", r)
         return
     }
 
@@ -452,7 +513,11 @@ def setSelectOption(String selectName, String option) {
     def desired = [(cfg.directive): option]
     if (device.currentValue("switch") != "on") desired["power_switch"] = true
     def r = sendControl(desired)
-    if (r?.ok && selectName == "oscmode") sendEvent(name: "oscillationMode", value: option)
+    if (r?.ok) {
+        if (selectName == "oscmode") sendEvent(name: "oscillationMode", value: option)
+    } else {
+        logFailure("setSelectOption(${selectName}, ${option})", r)
+    }
 }
 
 // ---------- Toggles ----------

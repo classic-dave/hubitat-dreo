@@ -1,5 +1,5 @@
 /**
- * Dreo Humidifier - Hubitat driver, child of the Dreo Integration app  (0.3.0)
+ * Dreo Humidifier - Hubitat driver, child of the Dreo Integration app  (0.4.0)
  *
  * For Dreo humidifiers (deviceType "humidifier", DR-HHM*). Like the Dreo Fan
  * driver, everything model-specific is read from the device's own config: mode
@@ -32,7 +32,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String DRIVER_VERSION = "0.3.0"
+@Field static final String DRIVER_VERSION = "0.4.0"
 
 @Field static final Map TOGGLE_ATTR_FOR_KEY = [
     "panelSound"     : "panelSound",       // mute_switch
@@ -253,8 +253,16 @@ private Map sendControl(Map desired) {
     return r
 }
 
-def on()  { def r = sendControl([power_switch: true]);  if (r?.ok) sendEvent(name: "switch", value: "on") }
-def off() { def r = sendControl([power_switch: false]); if (r?.ok) sendEvent(name: "switch", value: "off") }
+// Log a control call the Dreo cloud did not accept. Mirrors setToggleField,
+// which has logged its failures since 0.3.0, so every command now leaves a
+// trace either way and a command that did nothing can be told apart from one
+// that worked.
+private void logFailure(String what, Map r) {
+    log.warn "${what} failed: status=${r?.status} data=${r?.data}"
+}
+
+def on()  { def r = sendControl([power_switch: true]);  if (r?.ok) sendEvent(name: "switch", value: "on")  else logFailure("on", r) }
+def off() { def r = sendControl([power_switch: false]); if (r?.ok) sendEvent(name: "switch", value: "off") else logFailure("off", r) }
 def togglePower() { (device.currentValue("switch") == "on") ? off() : on() }
 
 def setMode(mode) {
@@ -264,6 +272,7 @@ def setMode(mode) {
     if (device.currentValue("switch") != "on") desired["power_switch"] = true
     def r = sendControl(desired)
     if (r?.ok) sendEvent(name: "mode", value: mode)
+    else logFailure("setMode(${mode})", r)
 }
 
 def setHumiditySetpoint(humidity) {
@@ -292,6 +301,8 @@ def setHumiditySetpoint(humidity) {
     if (r?.ok) {
         sendEvent(name: "humiditySetpoint", value: v, unit: "%")
         log.info "Set ${field} = ${v}% (${mode} mode)"
+    } else {
+        logFailure("setHumiditySetpoint(${v}%)", r)
     }
 }
 
@@ -322,6 +333,7 @@ def setFogLevel(level) {
     if (device.currentValue("switch") != "on") desired["power_switch"] = true
     def r = sendControl(desired)
     if (r?.ok) sendEvent(name: "fogLevel", value: v)
+    else logFailure("setFogLevel(${v})", r)
 }
 
 // Humidity sensor offset. Field name is rhoffset in observed payloads.
@@ -330,7 +342,8 @@ def setCalibration(offset) {
     def hi = state.calibrationRange[1] as Integer
     def v = Math.max(lo, Math.min(hi, offset as Integer))
     if (v != (offset as Integer)) log.warn "Calibration ${offset} outside ${lo}..${hi}; clamped to ${v}"
-    sendControl([rhoffset: v])
+    def r = sendControl([rhoffset: v])
+    if (!r?.ok) logFailure("setCalibration(${v})", r)
 }
 
 private setToggleField(String attr, String value) {

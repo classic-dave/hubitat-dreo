@@ -1,5 +1,5 @@
 /**
- * Dreo Basic Device - Hubitat driver, child of the Dreo Integration app  (0.3.0)
+ * Dreo Basic Device - Hubitat driver, child of the Dreo Integration app  (0.4.0)
  *
  * The minimal driver for Dreo devices that are NOT fans: humidifiers, air
  * conditioners, and any future type the default Dreo Fan driver can't model.
@@ -29,7 +29,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String DRIVER_VERSION = "0.3.0"
+@Field static final String DRIVER_VERSION = "0.4.0"
 
 // Fields that mean the same thing on every Dreo device type seen so far.
 @Field static final String F_POWER     = "power_switch"
@@ -135,14 +135,24 @@ private Map sendControl(Map desired) {
     return r
 }
 
+// Log a control call the Dreo cloud did not accept. Mirrors setToggleField,
+// which has logged its failures since 0.3.0, so every command now leaves a
+// trace either way and a command that did nothing can be told apart from one
+// that worked.
+private void logFailure(String what, Map r) {
+    log.warn "${what} failed: status=${r?.status} data=${r?.data}"
+}
+
 def on() {
     def r = sendControl([(F_POWER): true])
     if (r?.ok) sendEvent(name: "switch", value: "on")
+    else logFailure("on", r)
 }
 
 def off() {
     def r = sendControl([(F_POWER): false])
     if (r?.ok) sendEvent(name: "switch", value: "off")
+    else logFailure("off", r)
 }
 
 // Probe any field on the device without shipping a new driver.
