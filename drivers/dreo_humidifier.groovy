@@ -373,11 +373,11 @@ def sendDesired(String json) {
 
 def logRawState() {
     if (!state.raw) { log.info "No state captured yet. Tap Refresh first."; return }
-    log.info "Dreo ${device.displayName} raw state:\n" + JsonOutput.prettyPrint(JsonOutput.toJson(state.raw))
+    log.info "Dreo ${device.displayName} raw state: " + JsonOutput.toJson((state.raw))
 }
 
 def logCapabilities() {
-    log.info "Dreo ${device.displayName} capabilities:\n" + JsonOutput.prettyPrint(JsonOutput.toJson([
+    log.info "Dreo ${device.displayName} capabilities: " + JsonOutput.toJson(([
         model: state.model, presetModes: state.presetModes,
         directiveGraph: state.directiveGraph, descriptionLimits: state.descriptionLimits,
         humidityRange: state.humidityRange, fogLevelRange: state.fogLevelRange,

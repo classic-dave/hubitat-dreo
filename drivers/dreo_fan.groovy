@@ -143,7 +143,7 @@ def logPresetModeSource() {
     def ov = null
     try { dv = device?.getDataValue("presetModes") } catch (e) { dv = "unreadable: ${e}" }
     try { ov = device?.getDataValue("oscOptions") } catch (e) { ov = "unreadable: ${e}" }
-    log.info "Dreo ${device.displayName} dropdown sources:\n" + JsonOutput.prettyPrint(JsonOutput.toJson([
+    log.info "Dreo ${device.displayName} dropdown sources: " + JsonOutput.toJson(([
         presetModesDataValue : dv,
         statePresetModes     : state.presetModes,
         presetDropdown       : modeConstraints(),
@@ -571,15 +571,15 @@ def sendDesired(String json) {
     else       log.warn "sendDesired ${JsonOutput.toJson(desired)} rejected: status=${r?.status} data=${r?.data}"
 }
 
-// Last known property map, pretty-printed for pasting into a bug report.
+// Last known property map on one line, for pasting into a bug report.
 def logRawState() {
     if (!state.raw) { log.info "No state captured yet. Tap Refresh first."; return }
-    log.info "Dreo ${device.displayName} raw state:\n" + JsonOutput.prettyPrint(JsonOutput.toJson(state.raw))
+    log.info "Dreo ${device.displayName} raw state: " + JsonOutput.toJson((state.raw))
 }
 
 // Print everything this device told us it can do, for bug reports.
 def logCapabilities() {
-    log.info "Dreo ${device.displayName} capabilities:\n" + JsonOutput.prettyPrint(JsonOutput.toJson([
+    log.info "Dreo ${device.displayName} capabilities: " + JsonOutput.toJson(([
         deviceType: state.deviceType, model: state.model,
         speedRange: [state.speedMin, state.speedMax], presetModes: state.presetModes,
         selects: state.selects,

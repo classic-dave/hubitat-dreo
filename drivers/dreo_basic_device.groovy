@@ -177,9 +177,9 @@ def sendDesired(String json) {
     }
 }
 
-// Pretty-print the last known property map to the logs, for copying into a report.
+// Log the last known property map on one line, for copying into a report.
 def logRawState() {
     if (!state.raw) { log.info "No state captured yet. Tap Refresh first."; return }
-    log.info "Dreo basic raw state for ${device.displayName}:\n" +
-             JsonOutput.prettyPrint(JsonOutput.toJson(state.raw))
+    log.info "Dreo basic raw state for ${device.displayName}: " +
+             JsonOutput.toJson((state.raw))
 }

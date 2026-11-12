@@ -108,7 +108,7 @@ def modeConstraints() {
 def logPresetModeSource() {
     def dv = null
     try { dv = device?.getDataValue("presetModes") } catch (e) { dv = "unreadable: ${e}" }
-    log.info "Dreo ${device.displayName} preset modes:\n" + JsonOutput.prettyPrint(JsonOutput.toJson([
+    log.info "Dreo ${device.displayName} preset modes: " + JsonOutput.toJson(([
         dataValue        : dv,
         statePresetModes  : state.presetModes,
         dropdownResolvesTo: modeConstraints(),
@@ -429,11 +429,11 @@ def sendDesired(String json) {
 
 def logRawState() {
     if (!state.raw) { log.info "No state captured yet. Tap Refresh first."; return }
-    log.info "Dreo ${device.displayName} raw state:\n" + JsonOutput.prettyPrint(JsonOutput.toJson(state.raw))
+    log.info "Dreo ${device.displayName} raw state: " + JsonOutput.toJson((state.raw))
 }
 
 def logCapabilities() {
-    log.info "Dreo ${device.displayName} capabilities:\n" + JsonOutput.prettyPrint(JsonOutput.toJson([
+    log.info "Dreo ${device.displayName} capabilities: " + JsonOutput.toJson(([
         deviceType: state.deviceType, model: state.model,
         speedRange: [state.speedMin, state.speedMax], presetModes: state.presetModes,
         manualMode: manualModeName(),
