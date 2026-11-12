@@ -185,7 +185,7 @@ private Map describeList(String endpoint, String token, String path, String verP
                count: 0, serials: [], devices: [], error: r.error]
     def body = r.body
     if (!(body instanceof Map)) {
-        out.shape = (body == null) ? "no body" : body.getClass().getSimpleName()
+        out.shape = (body == null) ? "no body" : typeName(body)
         return out
     }
     out.code = body.code
@@ -205,13 +205,13 @@ private Map describeList(String endpoint, String token, String path, String verP
             list = inner.value
         }
     } else {
-        out.shape = (data == null) ? "data is null" : "data is ${data.getClass().getSimpleName()}"
+        out.shape = (data == null) ? "data is null" : "data is ${typeName(data)}"
     }
 
     if (list == null) return out
     out.count = list.size()
     list.each { d ->
-        if (!(d instanceof Map)) { out.devices << [note: "entry is ${d?.getClass()?.getSimpleName()}"]; return }
+        if (!(d instanceof Map)) { out.devices << [note: "entry is ${typeName(d)}"]; return }
         def sn = d.deviceSn?.toString()
         if (sn) out.serials << sn
         def cfg = d.config
@@ -221,7 +221,7 @@ private Map describeList(String endpoint, String token, String path, String verP
             model     : d.model?.toString(),
             deviceType: d.deviceType?.toString(),
             missing   : ["deviceSn", "deviceName", "model", "deviceType", "config"].findAll { !d.containsKey(it) || d[it] == null },
-            configKeys: (cfg instanceof Map) ? (cfg.keySet() as List).sort() : ((cfg == null) ? null : cfg.getClass().getSimpleName()),
+            configKeys: (cfg instanceof Map) ? (cfg.keySet() as List).sort() : ((cfg == null) ? null : typeName(cfg)),
             topKeys   : (d.keySet() as List).sort()
         ]
     }
@@ -233,7 +233,7 @@ private Map describeState(String endpoint, String token, String path, String ver
     def out = [status: r.status, code: null, msg: null, shape: "none", keys: [], error: r.error]
     def body = r.body
     if (!(body instanceof Map)) {
-        out.shape = (body == null) ? "no body" : body.getClass().getSimpleName()
+        out.shape = (body == null) ? "no body" : typeName(body)
         return out
     }
     out.code = body.code
@@ -243,7 +243,7 @@ private Map describeState(String endpoint, String token, String path, String ver
         out.shape = "data is a Map"
         out.keys = (data.keySet() as List).sort()
     } else {
-        out.shape = (data == null) ? "data is null" : "data is ${data.getClass().getSimpleName()}"
+        out.shape = (data == null) ? "data is null" : "data is ${typeName(data)}"
     }
     return out
 }
@@ -352,6 +352,18 @@ private void writeOutFile(String text) {
         state.outFileOk = false
         log.warn "Dreo Probe: could not write ${OUT_FILE}: ${e}"
     }
+}
+
+// Hubitat's sandbox rejects reflection on an object's class, so name the
+// type with instanceof checks instead.
+private String typeName(x) {
+    if (x == null) return "null"
+    if (x instanceof Map) return "Map"
+    if (x instanceof List) return "List"
+    if (x instanceof String) return "String"
+    if (x instanceof Number) return "Number"
+    if (x instanceof Boolean) return "Boolean"
+    return "unrecognized type"
 }
 
 // ---------- Transport ----------
