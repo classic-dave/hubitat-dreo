@@ -2,7 +2,7 @@
   "packageName": "Dreo Integration",
   "author": "classic-dave",
   "version": "0.3.0",
-  "betaVersion": "0.4.0",
+  "betaVersion": "0.4.1",
   "minimumHEVersion": "2.3.4",
   "dateReleased": "2026-08-04",
   "tags": [
@@ -26,16 +26,6 @@
       "oauth": false,
       "primary": true,
       "description": "Required. Handles the Dreo account, device discovery and polling."
-    },
-    {
-      "id": "0f1b62db-704b-4084-a60e-b7e2a054191c",
-      "name": "Dreo Endpoint Probe",
-      "namespace": "classic-dave",
-      "location": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/apps/dreo_endpoint_probe.groovy",
-      "betaLocation": "https://raw.githubusercontent.com/classic-dave/hubitat-dreo/0.4.0-beta/apps/dreo_endpoint_probe.groovy",
-      "required": false,
-      "oauth": false,
-      "description": "Temporary diagnostic for the device detection reports. Read-only: it logs in, calls the device list endpoints and writes a report with serial numbers replaced. Removed at 0.4.0."
     }
   ],
   "drivers": [
