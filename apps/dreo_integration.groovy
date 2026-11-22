@@ -1,5 +1,5 @@
 /**
- * Dreo Integration - Hubitat parent app  (0.4.0)
+ * Dreo Integration - Hubitat parent app  (0.4.1)
  *
  * Shared account/auth/token lifecycle, device discovery, child creation, and the
  * single poll loop for all Dreo devices. Child drivers hold per-device semantics
@@ -21,7 +21,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String APP_VERSION            = "0.4.0"
+@Field static final String APP_VERSION            = "0.4.1"
 @Field static final String DEFAULT_CLIENT_ID      = "89ef537b2202481aaaf9077068bcb0c9"
 @Field static final String DEFAULT_CLIENT_SECRET  = "41b20a1f60e9499e89c8646c31f93ea1"
 @Field static final String NA_BASE_URL            = "https://open-api-us.dreo-tech.com"

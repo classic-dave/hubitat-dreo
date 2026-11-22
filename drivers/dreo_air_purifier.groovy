@@ -1,5 +1,5 @@
 /**
- * Dreo Air Purifier - Hubitat driver, child of the Dreo Integration app  (0.4.0)
+ * Dreo Air Purifier - Hubitat driver, child of the Dreo Integration app  (0.4.1)
  *
  * Split out of Dreo Fan, which a purifier was using until now. A purifier has
  * no oscillation, no light and no adaptive display, so those commands and
@@ -27,7 +27,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String DRIVER_VERSION = "0.4.0"
+@Field static final String DRIVER_VERSION = "0.4.1"
 
 // Wire field -> semantic attribute, same mapping Dreo Fan uses, minus the
 // ones a purifier does not have.
@@ -324,8 +324,10 @@ def setExactSpeed(level) {
     def manual = manualModeName()
     def current = device.currentValue("mode")
     if (manual && current && !current.equalsIgnoreCase(manual)) {
-        // Dreo's own integration sends lowercase here whatever the list says.
-        desired["mode"] = "manual"
+        // The device's own spelling. The cloud rejects lowercase "manual" on a
+        // DR-HAP002S with code 215002, even though Dreo's own integration
+        // sends it that way.
+        desired["mode"] = manual
         log.info "Switching to ${manual} so the speed change takes effect (was ${current})"
     } else if (!manual) {
         log.warn "This purifier lists no manual preset (${state.presetModes}), so a speed change " +

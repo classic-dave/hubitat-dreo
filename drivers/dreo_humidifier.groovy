@@ -1,5 +1,5 @@
 /**
- * Dreo Humidifier - Hubitat driver, child of the Dreo Integration app  (0.4.0)
+ * Dreo Humidifier - Hubitat driver, child of the Dreo Integration app  (0.4.1)
  *
  * For Dreo humidifiers (deviceType "humidifier", DR-HHM*). Like the Dreo Fan
  * driver, everything model-specific is read from the device's own config: mode
@@ -32,7 +32,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String DRIVER_VERSION = "0.4.0"
+@Field static final String DRIVER_VERSION = "0.4.1"
 
 @Field static final Map TOGGLE_ATTR_FOR_KEY = [
     "panelSound"     : "panelSound",       // mute_switch
